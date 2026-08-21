@@ -1,0 +1,128 @@
+# ============================================================
+# GoldSight AI V3.0 - Git 忽略规则
+# ============================================================
+
+# ----- 环境变量与密钥 -----
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+secrets/
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Python 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+.venv*/
+
+# Python 测试与覆盖率
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ----- Node.js / 前端 -----
+node_modules/
+dist/
+dist-ssr/
+build/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+.vite/
+
+# pnpm
+.pnpm-store/
+
+# yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ----- Docker -----
+docker-compose.override.yml
+.docker-data/
+
+# ----- IDE / 编辑器 -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ----- 操作系统 -----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ----- 日志 -----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ----- 临时文件 -----
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# ----- 文档构建 -----
+site/
+docs/_build/
+
+# ----- 测试覆盖率 -----
+coverage/
+*.lcov
+
+# ----- 本地数据目录 -----
+data/
+database/
+uploads/

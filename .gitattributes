@@ -1,0 +1,112 @@
+# ============================================================
+# GoldSight AI V3.0 - Git 属性配置
+# ============================================================
+
+# 统一换行符处理：自动检测文本文件并规范化
+* text=auto
+
+# ----- 源代码 -----
+*.py    text diff=python
+*.js    text
+*.jsx   text
+*.ts    text
+*.tsx   text
+*.html  text
+*.css   text
+*.scss  text
+*.json  text
+*.xml   text
+*.yaml  text
+*.yml   text
+*.toml  text
+*.md    text
+*.sh    text eol=lf
+*.bash  text eol=lf
+
+# ----- 配置文件 -----
+*.env       text
+*.cfg       text
+*.ini       text
+*.conf      text
+.dockerignore text
+.gitignore  text
+.gitattributes text
+.editorconfig text
+
+# ----- 文档 -----
+*.txt     text
+*.rst     text
+*.csv     text
+*.html    text
+
+# ----- 二进制文件（不做换行符转换） -----
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.svg     binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.eot     binary
+
+# ----- Docker -----
+Dockerfile    text
+docker-compose*.yml text
+# ============================================================
+# GoldSight AI V3.0 - Git 属性配置
+# ============================================================
+
+# 统一换行符处理：自动检测文本文件并规范化
+* text=auto
+
+# ----- 源代码 -----
+*.py    text diff=python
+*.js    text
+*.jsx   text
+*.ts    text
+*.tsx   text
+*.html  text
+*.css   text
+*.scss  text
+*.json  text
+*.xml   text
+*.yaml  text
+*.yml   text
+*.toml  text
+*.md    text
+*.sh    text eol=lf
+*.bash  text eol=lf
+
+# ----- 配置文件 -----
+*.env       text
+*.cfg       text
+*.ini       text
+*.conf      text
+.dockerignore text
+.gitignore  text
+.gitattributes text
+.editorconfig text
+
+# ----- 文档 -----
+*.txt     text
+*.rst     text
+*.csv     text
+*.html    text
+
+# ----- 二进制文件（不做换行符转换） -----
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.svg     binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.eot     binary
+
+# ----- Docker -----
+Dockerfile    text
+docker-compose*.yml text

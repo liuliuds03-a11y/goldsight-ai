@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoldSight AI V3.0 — 项目全局开发指南</title>
+<style>
+  :root {
+    --gold: #D4A843;
+    --gold-light: #F5E6C8;
+    --gold-dark: #8B6914;
+    --bg: #0F1419;
+    --bg-card: #1A1F2E;
+    --bg-card2: #232B3A;
+    --text: #E8E8E8;
+    --text-dim: #9CA3AF;
+    --border: #2D3748;
+    --green: #48BB78;
+    --red: #F56565;
+    --yellow: #ECC94B;
+    --blue: #63B3ED;
+    --purple: #B794F4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-bottom: 3px solid var(--gold);
+    padding: 60px 40px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 2.6em;
+    background: linear-gradient(90deg, var(--gold), #F0D78C, var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .hero .subtitle {
+    color: var(--text-dim);
+    font-size: 1.15em;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: var(--gold-dark);
+    color: var(--gold-light);
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    margin-top: 16px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  h2 {
+    color: var(--gold);
+    font-size: 1.6em;
+    margin: 48px 0 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  h2:first-child { margin-top: 0; }
+  h3 { color: var(--blue); font-size: 1.15em; margin: 24px 0 12px; }
+  p, li { color: var(--text); margin-bottom: 8px; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .card-gold { border-left: 4px solid var(--gold); }
+  .card-green { border-left: 4px solid var(--green); }
+  .card-red { border-left: 4px solid var(--red); }
+  .card-blue { border-left: 4px solid var(--blue); }
+  .card-purple { border-left: 4px solid var(--purple); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.95em;
+  }
+  th {
+    background: var(--bg-card2);
+    color: var(--gold);
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--gold-dark);
+    font-weight: 600;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:hover td { background: rgba(212,168,67,0.05); }
+  .status-ok { color: var(--green); font-weight: bold; }
+  .status-no { color: var(--red); font-weight: bold; }
+  .status-warn { color: var(--yellow); font-weight: bold; }
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+  }
+  .tag-ok { background: rgba(72,187,120,0.15); color: var(--green); }
+  .tag-no { background: rgba(245,101,101,0.15); color: var(--red); }
+  .tag-warn { background: rgba(236,201,75,0.15); color: var(--yellow); }
+  .tag-info { background: rgba(99,179,237,0.15); color: var(--blue); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .grid2 { grid-template-columns: 1fr; } }
+  .flow-box {
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    display: inline-block;
+    margin: 4px;
+    font-size: 0.9em;
+  }
+  .flow-arrow { color: var(--gold); font-size: 1.2em; margin: 0 2px; }
+  .phase-timeline { position: relative; padding-left: 32px; }
+  .phase-timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .phase-item {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .phase-item::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 16px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 2px solid var(--bg);
+  }
+  .phase-item.active::before { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+  .phase-item.done::before { background: var(--green); }
+  .phase-num {
+    color: var(--gold);
+    font-weight: bold;
+    font-size: 0.85em;
+  }
+  .agent-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 12px 0;
+    transition: border-color 0.2s;
+  }
+  .agent-card:hover { border-color: var(--gold-dark); }
+  .agent-card h4 {
+    color: var(--gold);
+    font-size: 1.1em;
+    margin-bottom: 8px;
+  }
+  .agent-card .role { color: var(--blue); font-size: 0.9em; margin-bottom: 8px; }
+  code {
+    background: var(--bg-card2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--purple);
+  }
+  .toc { background: var(--bg-card); border-radius: 12px; padding: 24px; margin: 24px 0; }
+  .toc a { color: var(--blue); text-decoration: none; display: block; padding: 4px 0; }
+  .toc a:hover { color: var(--gold); }
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(212,168,67,0.1), rgba(212,168,67,0.02));
+    border: 1px solid var(--gold-dark);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .footer {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    margin-top: 60px;
+  }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>GoldSight AI V3.0</h1>
+  <div class="subtitle">以黄金为核心的全球多金属智能监测、分析与预测平台<br>项目全局开发指南</div>
+  <div class="badge">PM Agent 发布 · 2026-08-22 · 阶段 0 进行中</div>
+</div>
+
+<div class="container">
+
+<!-- 目录 -->
+<div class="toc">
+  <h3 style="margin-top:0">目录</h3>
+  <a href="#s1">一、项目是什么</a>
+  <a href="#s2">二、技术栈总览</a>
+  <a href="#s3">三、项目目录结构</a>
+  <a href="#s4">四、核心工作流</a>
+  <a href="#s5">五、监测指标体系（14 大类）</a>
+  <a href="#s6">六、预测输出标准</a>
+  <a href="#s7">七、开发阶段与推进顺序</a>
+  <a href="#s8">八、Agent 分工与职责</a>
+  <a href="#s9">九、协作规则</a>
+  <a href="#s10">十、当前项目状态与环境</a>
+  <a href="#s11">十一、Skill 效率工具指南</a>
+  <a href="#s12">十二、环境配置说明</a>
+</div>
+
+<!-- 一 -->
+<h2 id="s1">一、项目是什么</h2>
+<div class="card card-gold">
+  <p><strong>GoldSight AI</strong> 是一个以<strong>黄金为核心</strong>的全球多金属智能监测、分析与预测平台。</p>
+  <p>系统通过采集全球黄金相关数据（行情、宏观经济、利率、美元、美债、原油、美股、ETF、CFTC、央行购金、地缘政治、新闻等），经过数据清洗、指标计算、多个专业 Agent 并行分析、量化分析和 DeepSeek 大模型综合分析，形成可解释的黄金短期与长期研究结论。</p>
+  <p style="margin-top:12px"><strong>核心价值：</strong>把分散在全球各市场的黄金相关信息<strong>自动汇总、清洗、分析、解释</strong>，而不是单纯展示行情。</p>
+</div>
+<div class="highlight-box">
+  <strong>重要声明：</strong>GoldSight 是研究与分析系统，预测具有概率性，<span style="color:var(--red)">不构成投资建议或收益保证</span>。
+</div>
+
+<!-- 二 -->
+<h2 id="s2">二、技术栈总览</h2>
+<table>
+  <tr><th>层级</th><th>技术选型</th><th>说明</th></tr>
+  <tr><td>后端</td><td><code>Python 3.9+</code> / <code>FastAPI</code></td><td>数据处理、API 服务、Agent 编排</td></tr>
+  <tr><td>前端</td><td><code>TypeScript</code> / <code>React 18</code> / <code>Vite</code></td><td>金融 Dashboard、图表展示</td></tr>
+  <tr><td>图表</td><td><code>ECharts</code></td><td>K 线、指标、趋势等金融图表</td></tr>
+  <tr><td>数据库</td><td><code>PostgreSQL 16</code></td><td>结构化金融数据持久化</td></tr>
+  <tr><td>缓存</td><td><code>Redis 7</code></td><td>缓存、任务队列</td></tr>
+  <tr><td>容器</td><td><code>Docker</code> + <code>Docker Compose</code></td><td>本地开发环境统一</td></tr>
+  <tr><td>AI</td><td><code>DeepSeek API</code></td><td>综合分析、报告生成</td></tr>
+  <tr><td>版本控制</td><td><code>Git</code></td><td>代码管理</td></tr>
+</table>
+
+<!-- 三 -->
+<h2 id="s3">三、项目目录结构</h2>
+<div class="card">
+<pre style="color:var(--text);font-size:0.92em;line-height:1.8">
+GoldSight Multi-Metal/
+├── <span style="color:var(--gold)">backend/</span>          ← 后端代码（Backend Agent 负责）
+├── <span style="color:var(--gold)">frontend/</span>         ← 前端代码（Frontend Agent 负责）
+├── <span style="color:var(--gold)">database/</span>         ← 数据库代码（Database Agent 负责）
+├── <span style="color:var(--gold)">docs/</span>             ← 项目文档（PM + 各 Agent 共同维护）
+│   ├── environment/      环境检查报告
+│   ├── architecture/     架构设计文档
+│   ├── api/              API 接口规范
+│   ├── data/             数据源、数据字典
+│   ├── development/      开发规范
+│   └── agent-prompts/    Agent 任务提示词
+├── docker-compose.yml    ← Docker 容器编排
+├── .env                  ← 环境变量（不提交 Git）
+├── .env.example          ← 环境变量模板
+└── .gitignore            ← Git 忽略规则</pre>
+</div>
+<div class="highlight-box">
+  <strong>关键原则：</strong>每个 Agent 只负责自己的目录，不跨目录修改。需要跨模块时先向 PM 报告。
+</div>
+
+<!-- 四 -->
+<h2 id="s4">四、核心工作流</h2>
+<div class="card" style="text-align:center">
+  <div class="flow-box">外部数据源</div><span class="flow-arrow">→</span>
+  <div class="flow-box">数据采集</div><span class="flow-arrow">→</span>
+  <div class="flow-box">质量检查</div><span class="flow-arrow">→</span>
+  <div class="flow-box">清洗/指标</div><span class="flow-arrow">→</span>
+  <br><br>
+  <div class="flow-box" style="border-color:var(--gold)">专业 Agent 并行分析</div><span class="flow-arrow">→</span>
+  <br><br>
+  <div class="flow-box">量化模型</div><span class="flow-arrow">→</span>
+  <div class="flow-box" style="border-color:var(--purple)">DeepSeek 综合</div><span class="flow-arrow">→</span>
+  <div class="flow-box">决策融合</div><span class="flow-arrow">→</span>
+  <br><br>
+  <div class="flow-box" style="border-color:var(--green)">预测 + 报告</div><span class="flow-arrow">→</span>
+  <div class="flow-box">API</div><span class="flow-arrow">→</span>
+  <div class="flow-box">前端展示</div><span class="flow-arrow">→</span>
+  <div class="flow-box">回测/发布</div>
+</div>
+<h3>专业 Agent 分析矩阵</h3>
+<div class="grid2">
+  <div class="card card-blue"><strong>Technical Agent</strong><br>技术面：MA / RSI / MACD / 布林带 / ADX / Fibonacci</div>
+  <div class="card card-green"><strong>Macro Agent</strong><br>宏观面：Fed / 通胀 / 就业 / 利率 / GDP</div>
+  <div class="card card-purple"><strong>Market Agent</strong><br>市场面：美元 / 美债 / 原油 / 美股 / VIX</div>
+  <div class="card card-gold"><strong>Fund Agent</strong><br>资金面：ETF / CFTC / 央行购金</div>
+</div>
+<div class="card card-red"><strong>Geo Agent</strong> — 地缘政治：新闻 / 冲突 / 制裁 / 金融风险事件</div>
+
+<!-- 五 -->
+<h2 id="s5">五、监测指标体系（14 大类）</h2>
+<table>
+  <tr><th>#</th><th>类别</th><th>关键指标</th></tr>
+  <tr><td>1</td><td>黄金本身</td><td>现货/期货价格、涨跌幅、成交量、持仓量、波动率</td></tr>
+  <tr><td>2</td><td>美联储与利率</td><td>FOMC、联邦基金利率、政策声明、点阵图</td></tr>
+  <tr><td>3</td><td>通胀</td><td>CPI、核心 CPI、PCE、PPI、通胀预期</td></tr>
+  <tr><td>4</td><td>就业与经济</td><td>非农、失业率、GDP、PMI、零售销售</td></tr>
+  <tr><td>5</td><td>美元</td><td>DXY、EUR/USD、USD/JPY、USD/CNH</td></tr>
+  <tr><td>6</td><td>美债</td><td>2Y/5Y/10Y/30Y、TIPS、实际收益率、收益率曲线</td></tr>
+  <tr><td>7</td><td>原油</td><td>WTI、Brent、库存、OPEC</td></tr>
+  <tr><td>8</td><td>美股与风险</td><td>S&P 500、Nasdaq、VIX</td></tr>
+  <tr><td>9</td><td>黄金资金面</td><td>ETF 流入流出、CFTC 持仓</td></tr>
+  <tr><td>10</td><td>全球央行</td><td>黄金储备变化、购金/售金趋势</td></tr>
+  <tr><td>11</td><td>地缘政治</td><td>战争、冲突、制裁、金融风险事件</td></tr>
+  <tr><td>12</td><td>技术面</td><td>MA / RSI / MACD / 布林带 / ADX / Fibonacci</td></tr>
+  <tr><td>13</td><td>其他贵金属</td><td>白银、铂金、钯金</td></tr>
+  <tr><td>14</td><td>工业金属</td><td>铜、铝、锌、镍、铅、锡</td></tr>
+</table>
+
+<!-- 六 -->
+<h2 id="s6">六、预测输出标准</h2>
+<div class="grid2">
+  <div class="card card-gold">
+    <h3>短期预测（1小时～5天）</h3>
+    <ul>
+      <li>趋势：偏多 / 中性 / 偏空</li>
+      <li>上涨 / 下跌 / 震荡概率</li>
+      <li>置信度</li>
+      <li>5 个支撑位 S1-S5（含依据）</li>
+      <li>5 个阻力位 R1-R5（含依据）</li>
+      <li>主要利多 / 利空因素</li>
+      <li>预测失效条件</li>
+    </ul>
+  </div>
+  <div class="card card-blue">
+    <h3>长期预测（1～12个月）</h3>
+    <ul>
+      <li>Bear / Base / Bull 三种情景</li>
+      <li>各情景概率</li>
+      <li>目标价格区间</li>
+      <li>核心驱动因素</li>
+      <li>主要风险与目标失效条件</li>
+    </ul>
+  </div>
+</div>
+<div class="card">
+  <h3>研究报告标准</h3>
+  <ul>
+    <li>先展示<strong>数据事实</strong>，再给分析结论</li>
+    <li>必须区分：<span style="color:var(--green)">事实</span> / <span style="color:var(--blue)">模型输出</span> / <span style="color:var(--purple)">AI 推断</span> / <span style="color:var(--yellow)">不确定性</span></li>
+    <li>每个结论必须可追溯到数据和指标</li>
+    <li>不得把概率预测包装成确定性结果</li>
+  </ul>
+</div>
+
+<!-- 七 -->
+<h2 id="s7">七、开发阶段与推进顺序</h2>
+<div class="phase-timeline">
+  <div class="phase-item active"><span class="phase-num">阶段 0</span> — 环境检查与配置 <span class="tag tag-warn">当前</span><br>确认开发环境、安装依赖、Docker 配置</div>
+  <div class="phase-item"><span class="phase-num">阶段 1</span> — 总体方案确认 <span class="tag tag-info">待开始</span><br>数据需求、技术方案设计</div>
+  <div class="phase-item"><span class="phase-num">阶段 2</span> — 数据库基础<br>Schema 设计、Migration</div>
+  <div class="phase-item"><span class="phase-num">阶段 3</span> — 数据采集与质量<br>数据源接入、采集调度</div>
+  <div class="phase-item"><span class="phase-num">阶段 4</span> — 指标与专业分析<br>技术/宏观/市场/资金/地缘 Agent</div>
+  <div class="phase-item"><span class="phase-num">阶段 5</span> — Quant 与回测<br>特征工程、量化模型</div>
+  <div class="phase-item"><span class="phase-num">阶段 6</span> — DeepSeek 集成<br>AI 综合分析、报告生成</div>
+  <div class="phase-item"><span class="phase-num">阶段 7</span> — Decision 融合<br>多 Agent 结论融合</div>
+  <div class="phase-item"><span class="phase-num">阶段 8</span> — Backend API<br>完整 API 服务</div>
+  <div class="phase-item"><span class="phase-num">阶段 9</span> — Frontend<br>Dashboard、页面、图表</div>
+  <div class="phase-item"><span class="phase-num">阶段 10</span> — 全面测试<br>单元/集成/API/性能测试</div>
+  <div class="phase-item"><span class="phase-num">阶段 11</span> — 部署<br>服务器部署、正式运行</div>
+</div>
+
+<!-- 八 -->
+<h2 id="s8">八、Agent 分工与职责</h2>
+<div class="agent-card">
+  <h4>PM Agent（总控）</h4>
+  <div class="role">全局规划、任务拆解、质量验收、架构边界把控</div>
+  <p>每个功能完成后：开发自测 → Git 提交 → PM 验收 → 才进入下一阶段</p>
+</div>
+<div class="grid2">
+  <div class="agent-card">
+    <h4>环境配置 Agent</h4>
+    <div class="role">检查并配置开发环境</div>
+    <p>Python、Node.js、Docker、虚拟环境、依赖安装</p>
+  </div>
+  <div class="agent-card">
+    <h4>Backend Agent</h4>
+    <div class="role">backend/ 目录，FastAPI 全栈</div>
+    <p>API 设计、业务逻辑、Agent 编排、数据采集调度</p>
+  </div>
+  <div class="agent-card">
+    <h4>Frontend Agent</h4>
+    <div class="role">frontend/ 目录，React + Vite</div>
+    <p>Dashboard、金融图表、预测展示、报告页面</p>
+  </div>
+  <div class="agent-card">
+    <h4>Database Agent</h4>
+    <div class="role">database/ 目录，PostgreSQL</div>
+    <p>Schema 设计、Migration、数据字典、索引优化</p>
+  </div>
+  <div class="agent-card">
+    <h4>部署 Agent</h4>
+    <div class="role">Docker 容器、服务编排</div>
+    <p>docker-compose 管理、部署文档、环境一致性</p>
+  </div>
+  <div class="agent-card">
+    <h4>版本管理 Agent</h4>
+    <div class="role">Git 规范、分支策略</div>
+    <p>提交规范、分支管理、合并流程、版本标签</p>
+  </div>
+</div>
+
+<!-- 九 -->
+<h2 id="s9">九、协作规则</h2>
+<div class="card card-red">
+  <ol>
+    <li><strong>一次只做一个明确的小任务</strong>，不大范围重构</li>
+    <li><strong>自检通过才能提交</strong>：编译/启动通过、测试通过、日志正常</li>
+    <li><strong>PM 验收后才进入下一步</strong></li>
+    <li><strong>不跨目录修改</strong>：需要跨模块时先报告 PM</li>
+    <li><strong>敏感信息禁止提交 Git</strong>：API Key、密码等只写 <code>.env</code></li>
+    <li><strong>所有预测保留生成时间和输入数据版本</strong>，方便追溯</li>
+    <li><strong>提交信息格式</strong>：<code>feat / fix / test / docs / refactor / chore : 描述</code></li>
+    <li><strong>善用 Skill 工具提升效率</strong>（见第十一章）</li>
+  </ol>
+</div>
+
+<!-- 十 -->
+<h2 id="s10">十、当前项目状态与环境</h2>
+<h3>已完成</h3>
+<div class="card card-green">
+  <ul>
+    <li>✅ 项目需求文档与技术栈文档审核通过</li>
+    <li>✅ 基础设施配置文件（docker-compose.yml、.env、.gitignore）</li>
+    <li>✅ 项目一级目录骨架（backend/、frontend/、database/、docs/）</li>
+    <li>✅ 环境检查报告</li>
+    <li>✅ 全局开发指南文档</li>
+    <li>✅ 6 份 Agent 任务提示词</li>
+  </ul>
+</div>
+<h3>开发环境</h3>
+<table>
+  <tr><th>工具</th><th>状态</th><th>版本</th><th>评估</th></tr>
+  <tr><td>Git</td><td class="status-ok">✅ 可用</td><td>2.47.1</td><td>满足要求</td></tr>
+  <tr><td>Python</td><td class="status-ok">✅ 可用</td><td>3.9.13</td><td>FastAPI 兼容</td></tr>
+  <tr><td>Node.js</td><td class="status-ok">✅ 可用</td><td>20.20.2</td><td>满足前端要求</td></tr>
+  <tr><td>npm</td><td class="status-ok">✅ 可用</td><td>10.8.2</td><td>满足要求</td></tr>
+  <tr><td>Docker</td><td class="status-no">❌ 未安装</td><td>—</td><td><span class="tag tag-no">严重阻塞</span></td></tr>
+</table>
+<h3>当前阻塞项</h3>
+<div class="card card-red">
+  <strong>Docker 未安装</strong> — PostgreSQL 和 Redis 容器无法启动。需用户手动安装 Docker Desktop for Windows。
+</div>
+
+<!-- 十一 -->
+<h2 id="s11">十一、Skill 效率工具指南</h2>
+<div class="highlight-box">
+  <p>各 Agent 在开发过程中可以调用以下 Skill 来提升效率：</p>
+</div>
+<table>
+  <tr><th>Skill 名称</th><th>用途</th><th>推荐 Agent</th></tr>
+  <tr><td><code>schedule</code></td><td>创建定时/周期性任务（如定时数据采集、环境检查）</td><td>环境配置、Backend</td></tr>
+  <tr><td><code>create-skill</code></td><td>创建自定义 Skill，封装重复性工作为可复用技能</td><td>所有 Agent</td></tr>
+  <tr><td><code>create-subagent</code></td><td>创建专用子 Agent，处理特定子任务</td><td>Backend、Frontend</td></tr>
+  <tr><td><code>canvas</code></td><td>创建可视化 UI 原型/组件预览</td><td>Frontend</td></tr>
+  <tr><td><code>vercel-deploy</code></td><td>部署前端到 Vercel（后期演示用）</td><td>Frontend、部署</td></tr>
+</table>
+<div class="card card-blue">
+  <h3>使用建议</h3>
+  <ul>
+    <li><strong>环境配置 Agent</strong>：用 <code>schedule</code> 设置定时环境检查</li>
+    <li><strong>Backend Agent</strong>：用 <code>create-skill</code> 封装数据采集逻辑为可复用 Skill；用 <code>create-subagent</code> 创建数据清洗子 Agent</li>
+    <li><strong>Frontend Agent</strong>：用 <code>canvas</code> 预览 UI 组件和布局；用 <code>create-skill</code> 封装图表组件生成</li>
+    <li><strong>Database Agent</strong>：用 <code>create-skill</code> 封装 Schema 生成和 Migration 脚本模板</li>
+    <li><strong>部署 Agent</strong>：用 <code>schedule</code> 设置定时容器健康检查；用 <code>vercel-deploy</code> 做前端演示部署</li>
+    <li><strong>版本管理 Agent</strong>：用 <code>create-skill</code> 封装提交规范检查</li>
+  </ul>
+</div>
+
+<!-- 十二 -->
+<h2 id="s12">十二、环境配置说明</h2>
+<div class="grid2">
+  <div class="card">
+    <h3>本地服务端口</h3>
+    <table>
+      <tr><td>Backend API</td><td><code>:8000</code></td></tr>
+      <tr><td>Frontend</td><td><code>:5173</code></td></tr>
+      <tr><td>PostgreSQL</td><td><code>:5432</code></td></tr>
+      <tr><td>Redis</td><td><code>:6379</code></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Docker 容器</h3>
+    <ul>
+      <li>PostgreSQL 16 (Alpine) → <code>goldsight-postgres</code></li>
+      <li>Redis 7 (Alpine) → <code>goldsight-redis</code></li>
+      <li>启动：<code>docker compose up -d</code></li>
+      <li>停止：<code>docker compose down</code></li>
+    </ul>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <p>GoldSight AI V3.0 · PM Agent 发布 · 本文档随项目推进持续更新</p>
+  <p style="margin-top:8px;color:var(--gold-dark)">GoldSight 是研究与分析系统，预测具有概率性，不构成投资建议。</p>
+</div>
+
+</body>
+</html>

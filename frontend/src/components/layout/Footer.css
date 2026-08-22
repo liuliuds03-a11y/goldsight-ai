@@ -1,0 +1,26 @@
+.footer {
+  height: var(--footer-height);
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border);
+}
+
+.footer__inner {
+  max-width: 1400px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer__copy {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.footer__disclaimer {
+  font-size: 12px;
+  color: var(--color-warning);
+  opacity: 0.8;
+}

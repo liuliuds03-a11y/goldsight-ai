@@ -1,0 +1,118 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard__title {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--color-primary), #f0c040);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dashboard__subtitle {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  margin-top: -16px;
+}
+
+/* 状态卡片 */
+.dashboard__card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+
+.dashboard__card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.dashboard__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboard__status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dashboard__status-dot--checking {
+  background: var(--color-warning);
+  animation: pulse 1.5s infinite;
+}
+
+.dashboard__status-dot--connected {
+  background: var(--color-success);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+}
+
+.dashboard__status-dot--disconnected {
+  background: var(--color-danger);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+}
+
+.dashboard__status-text {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* 模块卡片网格 */
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.dashboard__module-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+
+.dashboard__module-card:hover {
+  border-color: var(--color-primary);
+}
+
+.dashboard__module-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dashboard__module-card p {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.dashboard__module-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--color-primary);
+  background: rgba(212, 160, 23, 0.1);
+  border: 1px solid rgba(212, 160, 23, 0.2);
+  border-radius: 4px;
+  width: fit-content;
+}

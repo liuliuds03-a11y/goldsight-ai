@@ -21,7 +21,30 @@ GoldSight AI V3.0 后端服务，基于 **Python + FastAPI** 构建。
 
 ## 目录结构
 
-> 由 Backend Agent 自主设计并逐步完善。
+```
+backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # FastAPI 应用入口
+│   ├── core/                # 核心模块
+│   │   ├── config.py        # 配置管理 (pydantic-settings)
+│   │   ├── database.py      # PostgreSQL 异步连接 (SQLAlchemy)
+│   │   ├── redis_client.py  # Redis 异步连接
+│   │   ├── response.py      # 统一响应格式
+│   │   └── exceptions.py    # 统一异常处理
+│   ├── api/                 # API 路由层
+│   │   ├── router.py        # v1 路由汇总
+│   │   └── v1/
+│   │       └── health.py    # 健康检查端点
+│   ├── models/              # SQLAlchemy ORM 模型（待扩展）
+│   ├── schemas/             # Pydantic 数据模型（待扩展）
+│   └── services/            # 业务逻辑层（待扩展）
+├── tests/                   # 测试目录
+│   ├── conftest.py          # 测试 fixtures
+│   ├── test_health.py       # 健康检查测试
+│   └── test_config.py       # 配置模块测试
+└── requirements.txt         # 依赖清单
+```
 
 ## 启动方式
 

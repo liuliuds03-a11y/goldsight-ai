@@ -124,5 +124,9 @@ coverage/
 
 # ----- 本地数据目录 -----
 data/
-database/
 uploads/
+
+# database/ 目录：Migration 脚本和文档需要版本控制，仅忽略运行时数据
+database/*.db
+database/*.sqlite
+database/data/

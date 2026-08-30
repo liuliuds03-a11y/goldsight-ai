@@ -16,6 +16,7 @@ from app.core.database import init_database, close_database
 from app.core.redis_client import init_redis, close_redis
 from app.core.exceptions import register_exception_handlers
 from app.api.router import api_v1_router
+from app.services.scheduler.scheduler import start_scheduler, stop_scheduler
 
 # ── 日志配置 ──────────────────────────────────────────────────
 
@@ -54,7 +55,13 @@ async def lifespan(app: FastAPI):
 
     logger.info("✅ GoldSight AI V3.0 后端服务启动完成")
 
+    # 启动定时任务调度器
+    await start_scheduler()
+
     yield  # ── 应用运行中 ──
+
+    # 停止调度器
+    await stop_scheduler()
 
     # 关闭资源
     logger.info("🛑 GoldSight AI V3.0 后端服务关闭中...")

@@ -337,6 +337,31 @@ async def _fetch_retail_sales() -> Dict[str, Any]:
     return await _fetch_fred_series("RSAFS", "Retail Sales", "retail")
 
 
+async def _fetch_real_yield() -> Dict[str, Any]:
+    """10Y TIPS 实际收益率"""
+    return await _fetch_fred_series("DFII10", "10-Year TIPS Real Yield", "real_yield")
+
+
+async def _fetch_credit_spread() -> Dict[str, Any]:
+    """BAA 信用利差"""
+    return await _fetch_fred_series("BAMLC0A4CBBB", "BAA-BBB Credit Spread", "credit_spread")
+
+
+async def _fetch_dollar_index() -> Dict[str, Any]:
+    """贸易加权美元指数"""
+    return await _fetch_fred_series("DTWEXBGS", "Trade Weighted USD Index", "dollar_index")
+
+
+async def _fetch_jobless_claims() -> Dict[str, Any]:
+    """初请失业金人数"""
+    return await _fetch_fred_series("ICSA", "Initial Jobless Claims", "jobless_claims")
+
+
+async def _fetch_consumer_sentiment() -> Dict[str, Any]:
+    """密歇根消费者信心"""
+    return await _fetch_fred_series("UMCSENT", "Consumer Sentiment Index", "consumer_sentiment")
+
+
 async def _fetch_silver() -> Dict[str, Any]:
     """白银价格 (NBP 也有白银数据)"""
     cached = await _get_cached("silver")
@@ -487,6 +512,40 @@ async def get_realtime_economic():
     })
 
 
+@router.get("/realtime/financial-stress")
+async def get_financial_stress():
+    """金融压力指标 (VIX/实际收益率/信用利差/美元指数)"""
+    import asyncio
+    vix, real_yield, credit, dollar = await asyncio.gather(
+        _fetch_vix(),
+        _fetch_real_yield(),
+        _fetch_credit_spread(),
+        _fetch_dollar_index(),
+    )
+    return success(data={
+        "vix": vix,
+        "real_yield": real_yield,
+        "credit_spread": credit,
+        "dollar_index": dollar,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+
+@router.get("/realtime/sentiment")
+async def get_sentiment():
+    """市场情绪指标 (消费者信心/初请失业金)"""
+    import asyncio
+    sentiment, claims = await asyncio.gather(
+        _fetch_consumer_sentiment(),
+        _fetch_jobless_claims(),
+    )
+    return success(data={
+        "consumer_sentiment": sentiment,
+        "jobless_claims": claims,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+
 @router.get("/realtime/all")
 async def get_realtime_all():
     """一次获取所有实时数据"""
@@ -541,7 +600,7 @@ async def refresh_realtime():
     if is_redis_available():
         try:
             r = get_redis()
-            keys = [f"{CACHE_PREFIX}{k}" for k in ["gold", "silver", "usd", "treasury", "treasury_2y", "treasury_5y", "treasury_30y", "oil", "stock", "fed_rate", "vix", "copper", "cpi", "ppi", "nonfarm", "unemployment", "gdp", "retail"]]
+            keys = [f"{CACHE_PREFIX}{k}" for k in ["gold", "silver", "usd", "treasury", "treasury_2y", "treasury_5y", "treasury_30y", "oil", "stock", "fed_rate", "vix", "copper", "cpi", "ppi", "nonfarm", "unemployment", "gdp", "retail", "real_yield", "credit_spread", "dollar_index", "jobless_claims", "consumer_sentiment"]]
             await r.delete(*keys)
         except Exception as e:
             logger.warning(f"缓存清除失败: {e}")

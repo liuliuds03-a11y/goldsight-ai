@@ -21,6 +21,13 @@ interface EconomicData {
   retail: { value: number; date: string; name: string }
 }
 
+interface FinancialStress {
+  vix: { value: number; date: string }
+  real_yield: { value: number; date: string }
+  credit_spread: { value: number; date: string }
+  dollar_index: { value: number; date: string }
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -29,6 +36,7 @@ export default function Dashboard() {
   // 实时数据
   const [realtime, setRealtime] = useState<RealtimeAll | null>(null)
   const [economic, setEconomic] = useState<EconomicData | null>(null)
+  const [stress, setStress] = useState<FinancialStress | null>(null)
   const [analysisSummary, setAnalysisSummary] = useState<AnalysisSummary | null>(null)
   const [prediction, setPrediction] = useState<PredictionResult | null>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
@@ -51,14 +59,16 @@ export default function Dashboard() {
 
   const loadAnalysisData = useCallback(async () => {
     try {
-      const [analysisRes, predictRes, econRes] = await Promise.all([
+      const [analysisRes, predictRes, econRes, stressRes] = await Promise.all([
         fetchAnalysisSummary(),
         fetchGoldPrediction(1),
         get<EconomicData>('/realtime/economic'),
+        get<FinancialStress>('/realtime/financial-stress'),
       ])
       setAnalysisSummary(analysisRes.data)
       if (predictRes.data.records.length > 0) setPrediction(predictRes.data.records[0])
       setEconomic(econRes.data)
+      setStress(stressRes.data)
     } catch (err) {
       console.error('分析数据加载失败:', err)
     }
@@ -280,6 +290,63 @@ export default function Dashboard() {
                   </span>
                   <span className="dashboard__economic-meta">
                     {economic.retail?.date || '--'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 金融压力监测卡片 */}
+          {stress && (
+            <div className="dashboard__card dashboard__stress-card">
+              <div className="dashboard__card-header">
+                <h2 className="dashboard__card-title">金融压力监测</h2>
+                <span className="dashboard__card-badge">FRED + VIX</span>
+              </div>
+              <div className="dashboard__stress-grid">
+                <div className="dashboard__stress-item">
+                  <span className="dashboard__stress-label">VIX 恐慌指数</span>
+                  <span className={`dashboard__stress-value ${
+                    stress.vix?.value > 20 ? 'stress-danger' : stress.vix?.value < 15 ? 'stress-safe' : 'stress-warning'
+                  }`}>
+                    {formatNumber(stress.vix?.value)}
+                  </span>
+                  <span className="dashboard__stress-meta">
+                    {stress.vix?.value > 20 ? '⚠ 高波动' : stress.vix?.value < 15 ? '✓ 低波动' : '— 中等'}
+                    {' · '}{stress.vix?.date || '--'}
+                  </span>
+                </div>
+                <div className="dashboard__stress-item">
+                  <span className="dashboard__stress-label">实际收益率 (10Y TIPS)</span>
+                  <span className={`dashboard__stress-value ${
+                    stress.real_yield?.value > 2 ? 'stress-safe' : stress.real_yield?.value < 0 ? 'stress-danger' : 'stress-warning'
+                  }`}>
+                    {formatNumber(stress.real_yield?.value, 3)}%
+                  </span>
+                  <span className="dashboard__stress-meta">
+                    {stress.real_yield?.value > 2 ? '✓ 正收益' : stress.real_yield?.value < 0 ? '⚠ 负收益' : '— 偏低'}
+                    {' · '}{stress.real_yield?.date || '--'}
+                  </span>
+                </div>
+                <div className="dashboard__stress-item">
+                  <span className="dashboard__stress-label">信用利差 (BAA-BBB)</span>
+                  <span className={`dashboard__stress-value ${
+                    stress.credit_spread?.value > 3 ? 'stress-danger' : stress.credit_spread?.value < 1.5 ? 'stress-safe' : 'stress-warning'
+                  }`}>
+                    {formatNumber(stress.credit_spread?.value, 2)}%
+                  </span>
+                  <span className="dashboard__stress-meta">
+                    {stress.credit_spread?.value > 3 ? '⚠ 风险偏高' : stress.credit_spread?.value < 1.5 ? '✓ 风险可控' : '— 中等'}
+                    {' · '}{stress.credit_spread?.date || '--'}
+                  </span>
+                </div>
+                <div className="dashboard__stress-item">
+                  <span className="dashboard__stress-label">贸易加权美元指数</span>
+                  <span className="dashboard__stress-value">
+                    {formatNumber(stress.dollar_index?.value, 2)}
+                  </span>
+                  <span className="dashboard__stress-meta">
+                    {stress.dollar_index?.date || '--'}
                   </span>
                 </div>
               </div>

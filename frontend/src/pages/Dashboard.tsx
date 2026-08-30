@@ -4,6 +4,7 @@ import {
   refreshRealtime,
   fetchAnalysisSummary,
   fetchGoldPrediction,
+  get,
 } from '@/services'
 import type { RealtimeAll } from '@/services'
 import type {
@@ -12,6 +13,14 @@ import type {
 } from '@/types'
 import './Dashboard.css'
 
+interface EconomicData {
+  nonfarm: { value: number; date: string; name: string }
+  unemployment: { value: number; date: string; name: string }
+  gdp: { value: number; date: string; name: string }
+  ppi: { value: number; date: string; name: string }
+  retail: { value: number; date: string; name: string }
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -19,6 +28,7 @@ export default function Dashboard() {
 
   // 实时数据
   const [realtime, setRealtime] = useState<RealtimeAll | null>(null)
+  const [economic, setEconomic] = useState<EconomicData | null>(null)
   const [analysisSummary, setAnalysisSummary] = useState<AnalysisSummary | null>(null)
   const [prediction, setPrediction] = useState<PredictionResult | null>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
@@ -41,12 +51,14 @@ export default function Dashboard() {
 
   const loadAnalysisData = useCallback(async () => {
     try {
-      const [analysisRes, predictRes] = await Promise.all([
+      const [analysisRes, predictRes, econRes] = await Promise.all([
         fetchAnalysisSummary(),
         fetchGoldPrediction(1),
+        get<EconomicData>('/realtime/economic'),
       ])
       setAnalysisSummary(analysisRes.data)
       if (predictRes.data.records.length > 0) setPrediction(predictRes.data.records[0])
+      setEconomic(econRes.data)
     } catch (err) {
       console.error('分析数据加载失败:', err)
     }
@@ -216,6 +228,63 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* 经济指标卡片组 */}
+          {economic && (
+            <div className="dashboard__card">
+              <div className="dashboard__card-header">
+                <h2 className="dashboard__card-title">经济指标</h2>
+                <span className="dashboard__card-badge">FRED</span>
+              </div>
+              <div className="dashboard__economic-grid">
+                <div className="dashboard__economic-item">
+                  <span className="dashboard__economic-label">非农就业</span>
+                  <span className="dashboard__economic-value">
+                    {economic.nonfarm?.value ? `${(economic.nonfarm.value / 1000).toFixed(1)}M` : '--'}
+                  </span>
+                  <span className="dashboard__economic-meta">
+                    {economic.nonfarm?.date || '--'}
+                  </span>
+                </div>
+                <div className="dashboard__economic-item">
+                  <span className="dashboard__economic-label">失业率</span>
+                  <span className="dashboard__economic-value">
+                    {economic.unemployment?.value != null ? `${economic.unemployment.value}%` : '--'}
+                  </span>
+                  <span className="dashboard__economic-meta">
+                    {economic.unemployment?.date || '--'}
+                  </span>
+                </div>
+                <div className="dashboard__economic-item">
+                  <span className="dashboard__economic-label">GDP 增速</span>
+                  <span className="dashboard__economic-value">
+                    {economic.gdp?.value != null ? `${economic.gdp.value}%` : '--'}
+                  </span>
+                  <span className="dashboard__economic-meta">
+                    {economic.gdp?.date || '--'}
+                  </span>
+                </div>
+                <div className="dashboard__economic-item">
+                  <span className="dashboard__economic-label">PPI 通胀</span>
+                  <span className="dashboard__economic-value">
+                    {economic.ppi?.value != null ? economic.ppi.value.toFixed(1) : '--'}
+                  </span>
+                  <span className="dashboard__economic-meta">
+                    {economic.ppi?.date || '--'}
+                  </span>
+                </div>
+                <div className="dashboard__economic-item">
+                  <span className="dashboard__economic-label">零售销售</span>
+                  <span className="dashboard__economic-value">
+                    {economic.retail?.value ? `${(economic.retail.value / 1000).toFixed(0)}B` : '--'}
+                  </span>
+                  <span className="dashboard__economic-meta">
+                    {economic.retail?.date || '--'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* AI 预测摘要卡片 */}
           <div className="dashboard__card dashboard__prediction-card">

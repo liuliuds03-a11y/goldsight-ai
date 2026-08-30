@@ -302,6 +302,41 @@ async def _fetch_treasury_30y() -> Dict[str, Any]:
     return await _fetch_fred_series("DGS30", "30-Year Treasury Yield", "treasury_30y")
 
 
+async def _fetch_treasury_5y() -> Dict[str, Any]:
+    """5Y 美债收益率"""
+    return await _fetch_fred_series("DGS5", "5-Year Treasury Yield", "treasury_5y")
+
+
+async def _fetch_nonfarm_payrolls() -> Dict[str, Any]:
+    """非农就业人数（千人）"""
+    return await _fetch_fred_series("PAYEMS", "Total Nonfarm Payrolls", "nonfarm")
+
+
+async def _fetch_unemployment_rate() -> Dict[str, Any]:
+    """失业率"""
+    return await _fetch_fred_series("UNRATE", "Unemployment Rate", "unemployment")
+
+
+async def _fetch_gdp_growth() -> Dict[str, Any]:
+    """实际 GDP 增长率"""
+    return await _fetch_fred_series("A191RL1Q225SBEA", "Real GDP Growth Rate", "gdp")
+
+
+async def _fetch_pmi() -> Dict[str, Any]:
+    """ISM 制造业 PMI"""
+    return await _fetch_fred_series("MANEMP", "ISM Manufacturing Employment", "pmi")
+
+
+async def _fetch_ppi() -> Dict[str, Any]:
+    """生产者价格指数 PPI"""
+    return await _fetch_fred_series("PPIACO", "Producer Price Index", "ppi")
+
+
+async def _fetch_retail_sales() -> Dict[str, Any]:
+    """零售销售"""
+    return await _fetch_fred_series("RSAFS", "Retail Sales", "retail")
+
+
 async def _fetch_silver() -> Dict[str, Any]:
     """白银价格 (NBP 也有白银数据)"""
     cached = await _get_cached("silver")
@@ -433,19 +468,21 @@ async def get_realtime_treasury_curves():
 
 @router.get("/realtime/economic")
 async def get_realtime_economic():
-    """经济指标汇总 (联邦基金利率/CPI/VIX/铜价)"""
+    """经济指标汇总 (就业/GDP/PMI/失业率/通胀)"""
     import asyncio
-    fed, cpi, vix, copper = await asyncio.gather(
-        _fetch_fed_funds_rate(),
-        _fetch_cpi(),
-        _fetch_vix(),
-        _fetch_copper(),
+    nonfarm, unemployment, gdp, ppi, retail = await asyncio.gather(
+        _fetch_nonfarm_payrolls(),
+        _fetch_unemployment_rate(),
+        _fetch_gdp_growth(),
+        _fetch_ppi(),
+        _fetch_retail_sales(),
     )
     return success(data={
-        "fed_rate": fed,
-        "cpi": cpi,
-        "vix": vix,
-        "copper": copper,
+        "nonfarm": nonfarm,
+        "unemployment": unemployment,
+        "gdp": gdp,
+        "ppi": ppi,
+        "retail": retail,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
 
@@ -477,13 +514,34 @@ async def get_realtime_all():
     })
 
 
+@router.get("/realtime/jobs")
+async def get_realtime_jobs():
+    """非农就业数据"""
+    data = await _fetch_nonfarm_payrolls()
+    return success(data=data)
+
+
+@router.get("/realtime/unemployment")
+async def get_realtime_unemployment():
+    """失业率"""
+    data = await _fetch_unemployment_rate()
+    return success(data=data)
+
+
+@router.get("/realtime/gdp")
+async def get_realtime_gdp():
+    """GDP 增长率"""
+    data = await _fetch_gdp_growth()
+    return success(data=data)
+
+
 @router.post("/realtime/refresh")
 async def refresh_realtime():
     """强制刷新所有实时数据（清除缓存）"""
     if is_redis_available():
         try:
             r = get_redis()
-            keys = [f"{CACHE_PREFIX}{k}" for k in ["gold", "silver", "usd", "treasury", "treasury_2y", "treasury_30y", "oil", "stock", "fed_rate", "vix", "copper", "cpi"]]
+            keys = [f"{CACHE_PREFIX}{k}" for k in ["gold", "silver", "usd", "treasury", "treasury_2y", "treasury_5y", "treasury_30y", "oil", "stock", "fed_rate", "vix", "copper", "cpi", "ppi", "nonfarm", "unemployment", "gdp", "retail"]]
             await r.delete(*keys)
         except Exception as e:
             logger.warning(f"缓存清除失败: {e}")

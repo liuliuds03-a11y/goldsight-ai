@@ -1,19 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  fetchGoldPrices,
-  fetchUsdData,
-  fetchTreasuryYields,
-  fetchOilData,
-  fetchStockMarketData,
+  fetchRealtimeAll,
+  refreshRealtime,
   fetchAnalysisSummary,
   fetchGoldPrediction,
 } from '@/services'
+import type { RealtimeAll } from '@/services'
 import type {
-  GoldPriceRecord,
-  UsdDataRecord,
-  TreasuryYieldRecord,
-  OilDataRecord,
-  StockMarketRecord,
   AnalysisSummary,
   PredictionResult,
 } from '@/types'
@@ -21,91 +14,105 @@ import './Dashboard.css'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // 数据状态
-  const [goldPrice, setGoldPrice] = useState<GoldPriceRecord | null>(null)
-  const [usdData, setUsdData] = useState<UsdDataRecord | null>(null)
-  const [treasuryYield, setTreasuryYield] = useState<TreasuryYieldRecord | null>(null)
-  const [oilData, setOilData] = useState<OilDataRecord | null>(null)
-  const [stockData, setStockData] = useState<StockMarketRecord | null>(null)
+  // 实时数据
+  const [realtime, setRealtime] = useState<RealtimeAll | null>(null)
   const [analysisSummary, setAnalysisSummary] = useState<AnalysisSummary | null>(null)
   const [prediction, setPrediction] = useState<PredictionResult | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<string>('')
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true)
-        setError(null)
-
-        // 并行请求所有数据
-        const [goldRes, usdRes, treasuryRes, oilRes, stockRes, analysisRes, predictRes] = await Promise.all([
-          fetchGoldPrices({ limit: 1 }),
-          fetchUsdData({ limit: 1 }),
-          fetchTreasuryYields({ limit: 1, maturity: '10Y' }),
-          fetchOilData({ limit: 1 }),
-          fetchStockMarketData({ limit: 1, index_symbol: 'SPX' }),
-          fetchAnalysisSummary(),
-          fetchGoldPrediction(1),
-        ])
-
-        // 提取数据
-        if (goldRes.data.records.length > 0) setGoldPrice(goldRes.data.records[0])
-        if (usdRes.data.records.length > 0) setUsdData(usdRes.data.records[0])
-        if (treasuryRes.data.records.length > 0) setTreasuryYield(treasuryRes.data.records[0])
-        if (oilRes.data.records.length > 0) setOilData(oilRes.data.records[0])
-        if (stockRes.data.records.length > 0) setStockData(stockRes.data.records[0])
-        setAnalysisSummary(analysisRes.data)
-        if (predictRes.data.records.length > 0) setPrediction(predictRes.data.records[0])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '数据加载失败')
-      } finally {
-        setLoading(false)
+  const loadRealtimeData = useCallback(async (forceRefresh = false) => {
+    try {
+      if (forceRefresh) {
+        setRefreshing(true)
+        const res = await refreshRealtime()
+        setRealtime(res.data)
+      } else {
+        const res = await fetchRealtimeAll()
+        setRealtime(res.data)
       }
+      setLastUpdate(new Date().toLocaleTimeString())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '实时数据加载失败')
     }
-
-    loadData()
   }, [])
 
-  // 格式化数字
+  const loadAnalysisData = useCallback(async () => {
+    try {
+      const [analysisRes, predictRes] = await Promise.all([
+        fetchAnalysisSummary(),
+        fetchGoldPrediction(1),
+      ])
+      setAnalysisSummary(analysisRes.data)
+      if (predictRes.data.records.length > 0) setPrediction(predictRes.data.records[0])
+    } catch (err) {
+      console.error('分析数据加载失败:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    async function init() {
+      setLoading(true)
+      await Promise.all([loadRealtimeData(), loadAnalysisData()])
+      setLoading(false)
+    }
+    init()
+  }, [loadRealtimeData, loadAnalysisData])
+
+  // 一键刷新所有数据
+  const handleRefreshAll = async () => {
+    setRefreshing(true)
+    setError(null)
+    await Promise.all([loadRealtimeData(true), loadAnalysisData()])
+    setRefreshing(false)
+  }
+
   const formatNumber = (value: number | null | undefined, decimals = 2) => {
-    if (value == null) return '--'
+    if (value == null || isNaN(value)) return '--'
     return value.toFixed(decimals)
   }
 
-  // 格式化涨跌幅
-  const formatChange = (value: number | null | undefined) => {
-    if (value == null) return '--'
-    const sign = value >= 0 ? '+' : ''
-    return `${sign}${value.toFixed(2)}%`
-  }
-
-  // 获取趋势箭头
-  const getTrendArrow = (value: number | null | undefined) => {
-    if (value == null) return '→'
-    return value >= 0 ? '↑' : '↓'
-  }
-
-  // 获取趋势类名
   const getTrendClass = (value: number | null | undefined) => {
     if (value == null) return 'neutral'
     return value >= 0 ? 'positive' : 'negative'
   }
 
+  const getCachedBadge = (cached?: boolean) => {
+    if (!cached) return null
+    return <span className="dashboard__cached-badge">缓存</span>
+  }
+
   return (
     <div className="dashboard">
-      <h1 className="dashboard__title">GoldSight AI Dashboard</h1>
-      <p className="dashboard__subtitle">全球多金属智能监测与分析平台</p>
+      <div className="dashboard__header">
+        <div>
+          <h1 className="dashboard__title">GoldSight AI Dashboard</h1>
+          <p className="dashboard__subtitle">
+            全球多金属智能监测与分析平台
+            {lastUpdate && <span className="dashboard__last-update"> · 最后更新 {lastUpdate}</span>}
+          </p>
+        </div>
+        <button
+          className="dashboard__refresh-btn"
+          onClick={handleRefreshAll}
+          disabled={refreshing}
+          title="刷新所有数据"
+        >
+          <span className={`dashboard__refresh-icon ${refreshing ? 'spinning' : ''}`}>↻</span>
+          {refreshing ? '刷新中...' : '刷新数据'}
+        </button>
+      </div>
 
-      {/* 错误提示 */}
       {error && (
         <div className="dashboard__error">
           <span className="dashboard__error-icon">⚠</span>
           <span>{error}</span>
+          <button className="dashboard__error-close" onClick={() => setError(null)}>×</button>
         </div>
       )}
 
-      {/* 加载状态 */}
       {loading && (
         <div className="dashboard__loading">
           <div className="dashboard__loading-spinner" />
@@ -113,66 +120,82 @@ export default function Dashboard() {
         </div>
       )}
 
-      {!loading && !error && (
+      {!loading && (
         <>
           {/* 黄金实时价格卡片 */}
           <div className="dashboard__card dashboard__gold-card">
             <div className="dashboard__card-header">
               <h2 className="dashboard__card-title">黄金实时价格</h2>
-              <span className="dashboard__card-badge">XAU/USD</span>
+              <div className="dashboard__card-actions">
+                <span className="dashboard__card-badge">XAU/USD</span>
+                {getCachedBadge(realtime?.gold?._cached)}
+              </div>
             </div>
             <div className="dashboard__gold-content">
               <div className="dashboard__gold-price">
-                ${formatNumber(goldPrice?.close)}
+                ${formatNumber(realtime?.gold?.price)}
               </div>
-              <div className={`dashboard__gold-change ${getTrendClass(goldPrice?.change_pct)}`}>
-                <span className="dashboard__gold-arrow">{getTrendArrow(goldPrice?.change_pct)}</span>
-                <span>{formatChange(goldPrice?.change_pct)}</span>
+              <div className="dashboard__gold-meta">
+                <span className="dashboard__gold-source">
+                  来源: {realtime?.gold?.source || '--'} · {realtime?.gold?.date || '--'}
+                </span>
+                <span className="dashboard__gold-gram">
+                  ${formatNumber(realtime?.gold?.price_per_gram_usd)}/克
+                </span>
               </div>
             </div>
           </div>
 
           {/* 关键指标卡片组 */}
           <div className="dashboard__grid">
-            {/* 美元指数 */}
+            {/* 美元汇率 */}
             <div className="dashboard__indicator-card">
               <div className="dashboard__indicator-header">
-                <h3 className="dashboard__indicator-title">美元指数</h3>
-                <span className="dashboard__indicator-symbol">DXY</span>
+                <h3 className="dashboard__indicator-title">美元汇率</h3>
+                <div className="dashboard__card-actions">
+                  <span className="dashboard__indicator-symbol">USD</span>
+                  {getCachedBadge(realtime?.usd?._cached)}
+                </div>
               </div>
               <div className="dashboard__indicator-value">
-                {formatNumber(usdData?.close, 3)}
+                EUR {formatNumber(realtime?.usd?.rates?.EUR, 4)}
               </div>
-              <div className={`dashboard__indicator-change ${getTrendClass(usdData?.change_pct)}`}>
-                {formatChange(usdData?.change_pct)}
+              <div className="dashboard__indicator-extra">
+                JPY {formatNumber(realtime?.usd?.rates?.JPY, 2)} · CNY {formatNumber(realtime?.usd?.rates?.CNY, 4)}
               </div>
             </div>
 
             {/* 10Y 美债 */}
             <div className="dashboard__indicator-card">
               <div className="dashboard__indicator-header">
-                <h3 className="dashboard__indicator-title">10Y 美债</h3>
-                <span className="dashboard__indicator-symbol">US10Y</span>
+                <h3 className="dashboard__indicator-title">10Y 美债收益率</h3>
+                <div className="dashboard__card-actions">
+                  <span className="dashboard__indicator-symbol">US10Y</span>
+                  {getCachedBadge(realtime?.treasury?._cached)}
+                </div>
               </div>
               <div className="dashboard__indicator-value">
-                {formatNumber(treasuryYield?.yield, 3)}%
+                {formatNumber(realtime?.treasury?.value, 3)}%
               </div>
               <div className="dashboard__indicator-extra">
-                实际收益率: {formatNumber(treasuryYield?.real_yield, 3)}%
+                来源: {realtime?.treasury?.source || '--'} · {realtime?.treasury?.date || '--'}
               </div>
             </div>
 
             {/* 原油 */}
             <div className="dashboard__indicator-card">
               <div className="dashboard__indicator-header">
-                <h3 className="dashboard__indicator-title">原油</h3>
-                <span className="dashboard__indicator-symbol">WTI</span>
+                <h3 className="dashboard__indicator-title">WTI 原油</h3>
+                <div className="dashboard__card-actions">
+                  <span className="dashboard__indicator-symbol">WTI</span>
+                  {getCachedBadge(realtime?.oil?._cached)}
+                </div>
               </div>
               <div className="dashboard__indicator-value">
-                ${formatNumber(oilData?.close)}
+                ${formatNumber(realtime?.oil?.price)}
               </div>
-              <div className={`dashboard__indicator-change ${getTrendClass(oilData?.change_pct)}`}>
-                {formatChange(oilData?.change_pct)}
+              <div className="dashboard__indicator-extra">
+                来源: {realtime?.oil?.source || '--'} · {realtime?.oil?.date || '--'}
               </div>
             </div>
 
@@ -180,13 +203,16 @@ export default function Dashboard() {
             <div className="dashboard__indicator-card">
               <div className="dashboard__indicator-header">
                 <h3 className="dashboard__indicator-title">S&P 500</h3>
-                <span className="dashboard__indicator-symbol">SPX</span>
+                <div className="dashboard__card-actions">
+                  <span className="dashboard__indicator-symbol">SPX</span>
+                  {getCachedBadge(realtime?.stock?._cached)}
+                </div>
               </div>
               <div className="dashboard__indicator-value">
-                {formatNumber(stockData?.close, 0)}
+                {formatNumber(realtime?.stock?.value, 0)}
               </div>
-              <div className={`dashboard__indicator-change ${getTrendClass(stockData?.change_pct)}`}>
-                {formatChange(stockData?.change_pct)}
+              <div className="dashboard__indicator-extra">
+                来源: {realtime?.stock?.source || '--'} · {realtime?.stock?.date || '--'}
               </div>
             </div>
           </div>

@@ -56,7 +56,7 @@ async def _set_cached(key: str, data: Dict[str, Any]) -> None:
 
 
 async def _fetch_gold_price() -> Dict[str, Any]:
-    """获取实时黄金价格 - NBP API（波兰央行，免费无需 key）"""
+    """获取黄金价格 - gold-api.com（免费无需 key）"""
     cached = await _get_cached("gold")
     if cached:
         cached["_cached"] = True
@@ -64,36 +64,22 @@ async def _fetch_gold_price() -> Dict[str, Any]:
 
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            # NBP 提供每日黄金价格（以 PLN/盎司，需转换）
-            r = await client.get("http://api.nbp.pl/api/cenyzlota/?format=json")
+            r = await client.get("https://api.gold-api.com/price/XAU")
             if r.status_code == 200:
                 data = r.json()
-                if data:
-                    latest = data[-1] if isinstance(data, list) else data
-                    # NBP 返回 PLN per gram
-                    price_pln_gram = float(latest.get("cena", 0))
-                    
-                    # 获取 PLN/USD 汇率
-                    r = await client.get("https://api.frankfurter.dev/v1/latest?from=PLN&to=USD")
-                    pln_usd = 0.25  # 默认值
-                    if r.status_code == 200:
-                        rates = r.json().get("rates", {})
-                        usd_rate = rates.get("USD")
-                        if usd_rate:
-                            pln_usd = usd_rate
-                    
-                    # PLN/gram → USD/gram → USD/troy ounce (1 oz = 31.1035 g)
-                    price_usd_gram = price_pln_gram * pln_usd
-                    price_usd_oz = round(price_usd_gram * 31.1035, 2)
-                    
+                price = data.get("price")
+                if price:
+                    price = float(price)
+                    price_per_gram = round(price / 31.1035, 2)
+                    updated = data.get("updatedAt", "")[:10]
                     result = {
                         "symbol": "XAU/USD",
-                        "price": price_usd_oz,
-                        "price_per_gram_pln": round(price_pln_gram, 2),
-                        "price_per_gram_usd": round(price_usd_gram, 2),
-                        "pln_usd_rate": round(pln_usd, 6),
-                        "date": latest.get("data", ""),
-                        "source": "nbp_frankfurter",
+                        "price": round(price, 2),
+                        "price_per_gram_pln": None,
+                        "price_per_gram_usd": price_per_gram,
+                        "pln_usd_rate": None,
+                        "date": updated,
+                        "source": "gold-api",
                         "updated_at": datetime.now(timezone.utc).isoformat(),
                         "_cached": False,
                     }
@@ -102,7 +88,7 @@ async def _fetch_gold_price() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"黄金价格获取失败: {e}")
     
-    return {"symbol": "XAU/USD", "price": None, "error": "数据获取失败", "source": "nbp"}
+    return {"symbol": "XAU/USD", "price": None, "error": "数据获取失败", "source": "gold-api"}
 
 
 async def _fetch_usd_index() -> Dict[str, Any]:
@@ -363,7 +349,7 @@ async def _fetch_consumer_sentiment() -> Dict[str, Any]:
 
 
 async def _fetch_silver() -> Dict[str, Any]:
-    """白银价格 (NBP 也有白银数据)"""
+    """白银价格 - gold-api.com（免费无需 key）"""
     cached = await _get_cached("silver")
     if cached:
         cached["_cached"] = True
@@ -371,32 +357,22 @@ async def _fetch_silver() -> Dict[str, Any]:
 
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            r = await client.get("http://api.nbp.pl/api/cenysrebra/?format=json")
+            r = await client.get("https://api.gold-api.com/price/XAG")
             if r.status_code == 200:
                 data = r.json()
-                if data:
-                    latest = data[-1] if isinstance(data, list) else data
-                    price_pln_gram = float(latest.get("cena", 0))
-                    
-                    r2 = await client.get("https://api.frankfurter.dev/v1/latest?from=PLN&to=USD")
-                    pln_usd = 0.25
-                    if r2.status_code == 200:
-                        rates = r2.json().get("rates", {})
-                        usd_rate = rates.get("USD")
-                        if usd_rate:
-                            pln_usd = usd_rate
-                    
-                    price_usd_gram = price_pln_gram * pln_usd
-                    price_usd_oz = round(price_usd_gram * 31.1035, 2)
-                    
+                price = data.get("price")
+                if price:
+                    price = float(price)
+                    price_per_gram = round(price / 31.1035, 2)
+                    updated = data.get("updatedAt", "")[:10]
                     result = {
                         "symbol": "XAG/USD",
                         "name": "Silver",
-                        "price": price_usd_oz,
-                        "price_per_gram_pln": round(price_pln_gram, 2),
-                        "price_per_gram_usd": round(price_usd_gram, 2),
-                        "date": latest.get("data", ""),
-                        "source": "nbp_frankfurter",
+                        "price": round(price, 2),
+                        "price_per_gram_pln": None,
+                        "price_per_gram_usd": price_per_gram,
+                        "date": updated,
+                        "source": "gold-api",
                         "updated_at": datetime.now(timezone.utc).isoformat(),
                         "_cached": False,
                     }
@@ -405,7 +381,7 @@ async def _fetch_silver() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"白银价格获取失败: {e}")
     
-    return {"symbol": "XAG/USD", "name": "Silver", "price": None, "error": "数据获取失败", "source": "nbp"}
+    return {"symbol": "XAG/USD", "name": "Silver", "price": None, "error": "数据获取失败", "source": "gold-api"}
 
 
 # ── API 端点 ──────────────────────────────────────────────────

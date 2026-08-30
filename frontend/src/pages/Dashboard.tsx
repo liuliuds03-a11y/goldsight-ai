@@ -110,7 +110,7 @@ export default function Dashboard() {
     <div className="dashboard">
       <div className="dashboard__header">
         <div>
-          <h1 className="dashboard__title">GoldSight AI Dashboard</h1>
+          <h1 className="dashboard__title">GoldSight AI 总览</h1>
           <p className="dashboard__subtitle">
             全球多金属智能监测与分析平台
             {lastUpdate && <span className="dashboard__last-update"> · 最后更新 {lastUpdate}</span>}

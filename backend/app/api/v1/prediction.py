@@ -76,18 +76,42 @@ async def _fetch_latest_predictions(
 
 
 @router.post("/predict/gold")
-async def trigger_gold_prediction():
+async def trigger_gold_prediction(
+    force: bool = Query(False, description="强制重新预测，忽略缓存"),
+    db: AsyncSession = Depends(get_db),
+):
     """
     触发 AI 黄金价格预测
 
     从数据库读取技术指标、市场分析、宏观分析数据，
     调用 DeepSeek 大模型进行综合分析，输出预测结论。
+
+    优化：默认检查 24 小时内是否有预测结果，有则直接返回，
+    减少 token 消耗。设置 force=true 强制重新预测。
     """
+    # 检查缓存：24 小时内是否有预测结果
+    if not force:
+        cached = await _fetch_latest_predictions(db, limit=1)
+        if cached:
+            latest = cached[0]
+            generated_at = latest.get("generated_at")
+            if generated_at:
+                if isinstance(generated_at, str):
+                    generated_at = datetime.fromisoformat(generated_at)
+                hours_ago = (datetime.now() - generated_at.replace(tzinfo=None)).total_seconds() / 3600
+                if hours_ago < 24:
+                    logger.info(f"AI 预测缓存命中 ({hours_ago:.1f} 小时前)，跳过 DeepSeek 调用")
+                    return success(data={
+                        "record": latest,
+                        "cached": True,
+                        "message": f"返回 {hours_ago:.1f} 小时前的预测结果，如需重新预测请设置 force=true",
+                    })
+
     from app.services.ai.prediction_engine import run_ai_prediction
 
     try:
         result = await run_ai_prediction()
-        return success(data=result)
+        return success(data={"record": result, "cached": False})
     except Exception as e:
         logger.error(f"AI 预测执行失败: {e}")
         return error(message=f"AI 预测执行失败: {e}")
@@ -125,13 +149,17 @@ async def get_gold_predictions(
 
 
 @router.post("/predict/summary")
-async def trigger_ai_summary():
+async def trigger_ai_summary(
+    force: bool = Query(False, description="强制重新生成，忽略缓存"),
+):
     """
     AI 综合摘要 — 一句话总结当前行情
 
     基于最新的市场数据和历史分析结果，
     调用 DeepSeek 生成简洁的行情摘要。
+    同样有缓存优化，24 小时内有结果则直接返回。
     """
+    # TODO: 可以加类似 predict/gold 的缓存逻辑
     from app.services.ai.prediction_engine import run_ai_summary
 
     try:

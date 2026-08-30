@@ -23,6 +23,7 @@ export {
   triggerAISummary,
   fetchPredictionHistory,
 } from './predictService'
+export type { PredictionTriggerResult } from './predictService'
 export {
   fetchRealtimeAll,
   fetchRealtimeGold,

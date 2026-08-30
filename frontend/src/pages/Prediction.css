@@ -30,6 +30,24 @@
   margin: 8px 0 0 0;
 }
 
+.prediction__cache-info {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.prediction__actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.prediction__refresh-btn--primary {
+  background: rgba(212, 160, 23, 0.15) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+}
+
 /* 刷新按钮 */
 .prediction__refresh-btn {
   display: flex;

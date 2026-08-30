@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import ReactECharts from 'echarts-for-react'
-import { fetchGoldPrices, fetchIndicators } from '@/services'
+import { fetchGoldPrices, fetchIndicators, fetchRealtimeAll } from '@/services'
+import type { RealtimeAll } from '@/services'
 import type {
   GoldPriceRecord,
   TechnicalIndicatorRecord,
@@ -9,39 +10,70 @@ import './Gold.css'
 
 export default function Gold() {
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [prices, setPrices] = useState<GoldPriceRecord[]>([])
   const [indicators, setIndicators] = useState<TechnicalIndicatorRecord[]>([])
+  const [realtimeGold, setRealtimeGold] = useState<RealtimeAll['gold'] | null>(null)
+  const [realtimeSilver, setRealtimeSilver] = useState<{ price: number; date: string } | null>(null)
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const [priceRes, indicatorRes, realtimeRes] = await Promise.all([
+        fetchGoldPrices({ limit: 120 }),
+        fetchIndicators({ symbol: 'XAUUSD', indicator: 'MA', limit: 500 }),
+        fetchRealtimeAll(),
+      ])
+
+      const priceRecords = priceRes.data.records
+      priceRecords.sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      )
+      setPrices(priceRecords)
+      setIndicators(indicatorRes.data.records)
+
+      // 实时数据
+      const rt = realtimeRes.data
+      setRealtimeGold(rt.gold)
+      if (rt.silver && rt.silver.price) {
+        setRealtimeSilver({ price: rt.silver.price, date: rt.silver.date })
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '数据加载失败，请稍后重试')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const [priceRes, indicatorRes] = await Promise.all([
-          fetchGoldPrices({ limit: 120 }),
-          fetchIndicators({ symbol: 'XAUUSD', indicator: 'MA', limit: 500 }),
-        ])
-
-        const priceRecords = priceRes.data.records
-        // 按日期升序排列（图表从左到右）
-        priceRecords.sort(
-          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-        )
-        setPrices(priceRecords)
-
-        const indicatorRecords = indicatorRes.data.records
-        setIndicators(indicatorRecords)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '数据加载失败，请稍后重试')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadData()
-  }, [])
+  }, [loadData])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    setError(null)
+    try {
+      // 强制刷新实时数据
+      const { refreshRealtime } = await import('@/services')
+      await refreshRealtime()
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '刷新失败')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  /* ── 金银比 ──────────────────────────────────────── */
+  const goldSilverRatio = useMemo(() => {
+    if (realtimeGold?.price && realtimeSilver?.price) {
+      return (realtimeGold.price / realtimeSilver.price).toFixed(1)
+    }
+    return null
+  }, [realtimeGold, realtimeSilver])
 
   /* ── 按 period 分组指标数据 ─────────────────────────── */
   const maData = useMemo(() => {
@@ -67,7 +99,6 @@ export default function Gold() {
     const dates = prices.map((p) => p.timestamp.slice(0, 10))
     const closePrices = prices.map((p) => p.close)
 
-    // 构建 MA 系列数据：与 dates 对齐
     const buildMaSeries = (period: string, name: string, color: string) => {
       const maMap = maData[period]
       const data = dates.map((d) => (maMap.has(d) ? maMap.get(d) : null))
@@ -142,10 +173,7 @@ export default function Gold() {
           areaStyle: {
             color: {
               type: 'linear',
-              x: 0,
-              y: 0,
-              x2: 0,
-              y2: 1,
+              x: 0, y: 0, x2: 0, y2: 1,
               colorStops: [
                 { offset: 0, color: 'rgba(212,160,23,0.25)' },
                 { offset: 1, color: 'rgba(212,160,23,0.02)' },
@@ -161,12 +189,10 @@ export default function Gold() {
     }
   }, [prices, maData])
 
-  /* ── 表格数据（最近 10 条，降序） ───────────────────── */
   const tableRecords = useMemo(() => {
     return [...prices].slice(-10).reverse()
   }, [prices])
 
-  /* ── 格式化辅助 ────────────────────────────────────── */
   const fmt = (v: number | null | undefined, d = 2) =>
     v != null ? v.toFixed(d) : '--'
 
@@ -180,13 +206,54 @@ export default function Gold() {
     return v >= 0 ? '+' : ''
   }
 
-  /* ── 渲染 ──────────────────────────────────────────── */
   return (
     <div className="gold">
-      <h1 className="gold__title">黄金详情</h1>
-      <p className="gold__subtitle">XAU/USD 行情走势与技术指标分析</p>
+      {/* 实时价格头部 */}
+      <div className="gold__realtime-header">
+        <div className="gold__realtime-info">
+          <h1 className="gold__title">黄金详情</h1>
+          <p className="gold__subtitle">XAU/USD 行情走势与技术指标分析</p>
+        </div>
+        <div className="gold__realtime-cards">
+          {/* 实时金价 */}
+          <div className="gold__realtime-card gold__realtime-card--gold">
+            <span className="gold__realtime-label">实时金价</span>
+            <span className="gold__realtime-value">
+              ${realtimeGold?.price ? fmt(realtimeGold.price) : '--'}
+            </span>
+            <span className="gold__realtime-meta">
+              {realtimeGold?.date || '--'} · {fmt(realtimeGold?.price_per_gram_usd)}/克
+            </span>
+          </div>
+          {/* 实时银价 */}
+          <div className="gold__realtime-card gold__realtime-card--silver">
+            <span className="gold__realtime-label">实时银价</span>
+            <span className="gold__realtime-value">
+              ${realtimeSilver?.price ? fmt(realtimeSilver.price) : '--'}
+            </span>
+            <span className="gold__realtime-meta">XAG/USD</span>
+          </div>
+          {/* 金银比 */}
+          {goldSilverRatio && (
+            <div className="gold__realtime-card gold__realtime-card--ratio">
+              <span className="gold__realtime-label">金银比</span>
+              <span className="gold__realtime-value">{goldSilverRatio}</span>
+              <span className="gold__realtime-meta">Gold/Silver</span>
+            </div>
+          )}
+          {/* 刷新按钮 */}
+          <button
+            className="gold__refresh-btn"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="刷新所有数据"
+          >
+            <span className={refreshing ? 'gold__refresh-icon--spinning' : ''}>↻</span>
+            {refreshing ? '刷新中' : '刷新'}
+          </button>
+        </div>
+      </div>
 
-      {/* 错误提示 */}
       {error && (
         <div className="gold__error">
           <span className="gold__error-icon">⚠</span>
@@ -194,7 +261,6 @@ export default function Gold() {
         </div>
       )}
 
-      {/* 加载中 */}
       {loading && (
         <div className="gold__loading">
           <div className="gold__loading-spinner" />
@@ -207,7 +273,7 @@ export default function Gold() {
           {/* 价格走势图 */}
           <section className="gold__card gold__chart-card">
             <div className="gold__card-header">
-              <h2 className="gold__card-title">价格走势</h2>
+              <h2 className="gold__card-title">历史价格走势</h2>
               <span className="gold__card-badge">近 120 天</span>
             </div>
             <ReactECharts

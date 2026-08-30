@@ -13,6 +13,7 @@ from app.api.v1.analysis import router as analysis_router
 from app.api.v1.prediction import router as prediction_router
 from app.api.v1.scheduler import router as scheduler_router
 from app.api.v1.realtime import router as realtime_router
+from app.api.v1.reports import router as reports_router
 
 # v1 主路由
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -25,3 +26,4 @@ api_v1_router.include_router(analysis_router, tags=["市场分析"])
 api_v1_router.include_router(prediction_router, tags=["AI 预测"])
 api_v1_router.include_router(scheduler_router, tags=["定时任务"])
 api_v1_router.include_router(realtime_router, tags=["实时数据"])
+api_v1_router.include_router(reports_router, tags=["每日报告"])

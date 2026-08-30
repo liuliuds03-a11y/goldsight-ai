@@ -13,6 +13,18 @@ export interface RealtimeGold {
   _cached: boolean
 }
 
+export interface RealtimeSilver {
+  symbol: string
+  name: string
+  price: number
+  price_per_gram_pln: number
+  price_per_gram_usd: number
+  date: string
+  source: string
+  updated_at: string
+  _cached: boolean
+}
+
 export interface RealtimeUSD {
   base: string
   rates: Record<string, number>
@@ -56,10 +68,13 @@ export interface RealtimeStock {
 
 export interface RealtimeAll {
   gold: RealtimeGold
+  silver: RealtimeSilver | null
   usd: RealtimeUSD
   treasury: RealtimeTreasury
   oil: RealtimeOil
   stock: RealtimeStock
+  fed_rate: { symbol: string; name: string; value: number; date: string; source: string }
+  vix: { symbol: string; name: string; value: number; date: string; source: string }
   timestamp: string
 }
 

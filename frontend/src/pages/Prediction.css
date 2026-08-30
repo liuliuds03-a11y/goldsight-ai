@@ -1,0 +1,461 @@
+.prediction {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+/* ── 页面头部 ─────────────────────────────────────── */
+.prediction__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.prediction__title {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--color-primary), #f0c040);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.prediction__subtitle {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  margin: 8px 0 0 0;
+}
+
+/* 刷新按钮 */
+.prediction__refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  background: linear-gradient(135deg, var(--color-primary), #f0c040);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.prediction__refresh-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 160, 23, 0.3);
+}
+
+.prediction__refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.prediction__refresh-icon--spinning {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── 错误与加载 ───────────────────────────────────── */
+.prediction__error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  color: var(--color-danger);
+  font-size: 14px;
+}
+
+.prediction__error-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.prediction__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 20px;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+.prediction__loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── 通用卡片 ─────────────────────────────────────── */
+.prediction__card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  transition: border-color 0.2s;
+}
+
+.prediction__card:hover {
+  border-color: var(--color-primary);
+}
+
+.prediction__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.prediction__card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.prediction__card-badge {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-primary);
+  background: rgba(212, 160, 23, 0.1);
+  border: 1px solid rgba(212, 160, 23, 0.2);
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+/* ── AI 行情摘要卡片 ──────────────────────────────── */
+.prediction__summary-card {
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-card) 0%,
+    rgba(59, 130, 246, 0.05) 100%
+  );
+}
+
+.prediction__summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prediction__summary-text {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-text);
+  margin: 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-primary);
+}
+
+.prediction__summary-context {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 16px;
+}
+
+/* ── 预测结果主卡片 ───────────────────────────────── */
+.prediction__main-card {
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-card) 0%,
+    rgba(34, 197, 94, 0.05) 100%
+  );
+}
+
+.prediction__main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.prediction__direction-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prediction__label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.prediction__direction {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.prediction__direction--bullish {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--color-success);
+}
+
+.prediction__direction--bearish {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger);
+}
+
+.prediction__direction--neutral {
+  background: rgba(156, 163, 175, 0.1);
+  color: var(--color-text-secondary);
+}
+
+.prediction__direction-text {
+  font-size: 28px;
+}
+
+.prediction__direction-arrow {
+  font-size: 32px;
+}
+
+.prediction__conclusion {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-primary);
+}
+
+/* 统计数据网格 */
+.prediction__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.prediction__stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+}
+
+.prediction__stat-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.prediction__stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* ── 支撑/阻力位卡片 ─────────────────────────────── */
+.prediction__levels-card {
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-card) 0%,
+    rgba(168, 85, 247, 0.05) 100%
+  );
+}
+
+.prediction__levels-content {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.prediction__level-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+}
+
+.prediction__level--support {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.prediction__level--resistance {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.prediction__level-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prediction__level-icon {
+  font-size: 20px;
+}
+
+.prediction__level-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.prediction__level-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.5px;
+}
+
+/* ── 风险因素卡片 ─────────────────────────────────── */
+.prediction__risk-card {
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-card) 0%,
+    rgba(239, 68, 68, 0.05) 100%
+  );
+}
+
+.prediction__risk-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prediction__risk-empty {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 20px;
+  margin: 0;
+}
+
+.prediction__risk-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prediction__risk-item {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-danger);
+}
+
+.prediction__risk-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.prediction__risk-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.prediction__risk-score {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.prediction__risk-evidence {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+}
+
+.prediction__risk-impact {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* ── 响应式调整 ───────────────────────────────────── */
+@media (max-width: 1280px) {
+  .prediction {
+    padding: 20px;
+  }
+
+  .prediction__stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .prediction {
+    padding: 16px;
+    gap: 20px;
+  }
+
+  .prediction__header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .prediction__title {
+    font-size: 24px;
+  }
+
+  .prediction__refresh-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .prediction__stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prediction__levels-content {
+    grid-template-columns: 1fr;
+  }
+
+  .prediction__direction {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .prediction__direction-text {
+    font-size: 24px;
+  }
+
+  .prediction__direction-arrow {
+    font-size: 28px;
+  }
+}

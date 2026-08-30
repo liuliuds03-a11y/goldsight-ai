@@ -1,8 +1,8 @@
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 24px;
+  gap: 32px;
+  padding: 32px;
   min-height: 100vh;
 }
 
@@ -32,7 +32,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 /* 刷新按钮 */
@@ -372,6 +372,46 @@
   font-size: 11px;
   color: var(--color-text-secondary);
   opacity: 0.7;
+}
+
+/* 经济指标历史趋势图表 */
+.dashboard__chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1280px) {
+  .dashboard__chart-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard__chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard__chart-cell {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px;
+  transition: border-color 0.2s;
+}
+
+.dashboard__chart-cell:hover {
+  border-color: rgba(212, 160, 23, 0.3);
+}
+
+.dashboard__chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 180px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 /* AI 预测摘要卡片 */

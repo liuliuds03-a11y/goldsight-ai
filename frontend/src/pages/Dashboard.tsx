@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import ReactECharts from 'echarts-for-react'
 import {
   fetchRealtimeAll,
   refreshRealtime,
@@ -21,6 +22,14 @@ interface EconomicData {
   retail: { value: number; date: string; name: string }
 }
 
+interface EconomicHistory {
+  [key: string]: {
+    name: string
+    unit: string
+    data: { date: string; value: number }[]
+  }
+}
+
 interface FinancialStress {
   vix: { value: number; date: string }
   real_yield: { value: number; date: string }
@@ -39,6 +48,7 @@ export default function Dashboard() {
   const [stress, setStress] = useState<FinancialStress | null>(null)
   const [analysisSummary, setAnalysisSummary] = useState<AnalysisSummary | null>(null)
   const [prediction, setPrediction] = useState<PredictionResult | null>(null)
+  const [economicHistory, setEconomicHistory] = useState<EconomicHistory | null>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
 
   const loadRealtimeData = useCallback(async (forceRefresh = false) => {
@@ -59,16 +69,18 @@ export default function Dashboard() {
 
   const loadAnalysisData = useCallback(async () => {
     try {
-      const [analysisRes, predictRes, econRes, stressRes] = await Promise.all([
+      const [analysisRes, predictRes, econRes, stressRes, historyRes] = await Promise.all([
         fetchAnalysisSummary(),
         fetchGoldPrediction(1),
         get<EconomicData>('/realtime/economic'),
         get<FinancialStress>('/realtime/financial-stress'),
+        get<EconomicHistory>('/realtime/economic-history'),
       ])
       setAnalysisSummary(analysisRes.data)
       if (predictRes.data.records.length > 0) setPrediction(predictRes.data.records[0])
       setEconomic(econRes.data)
       setStress(stressRes.data)
+      setEconomicHistory(historyRes.data)
     } catch (err) {
       console.error('分析数据加载失败:', err)
     }
@@ -94,6 +106,46 @@ export default function Dashboard() {
   const formatNumber = (value: number | null | undefined, decimals = 2) => {
     if (value == null || isNaN(value)) return '--'
     return value.toFixed(decimals)
+  }
+
+  /** 生成经济指标迷你折线图配置 */
+  const getMiniChartOption = (title: string, data: { date: string; value: number }[], unit: string) => {
+    const dates = data.map(d => d.date?.substring(0, 7) || '')
+    const values = data.map(d => d.value)
+    const isPositive = values.length >= 2 ? values[values.length - 1] >= values[0] : true
+    const lineColor = isPositive ? '#22c55e' : '#ef4444'
+
+    return {
+      title: { text: title, left: 'center', top: 4, textStyle: { fontSize: 12, color: '#9ca3af', fontWeight: 500 } },
+      tooltip: {
+        trigger: 'axis' as const,
+        formatter: (params: any) => {
+          const p = params[0]
+          return `${p.name}<br/>${typeof p.value === 'number' ? p.value.toLocaleString() : p.value} ${unit}`
+        },
+        textStyle: { fontSize: 11 },
+      },
+      grid: { top: 30, right: 10, bottom: 20, left: 45 },
+      xAxis: {
+        type: 'category' as const,
+        data: dates,
+        axisLabel: { fontSize: 9, color: '#6b7280', interval: Math.floor(dates.length / 4) },
+        axisLine: { lineStyle: { color: '#374151' } },
+      },
+      yAxis: {
+        type: 'value' as const,
+        axisLabel: { fontSize: 9, color: '#6b7280', formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(1) },
+        splitLine: { lineStyle: { color: '#1f2937' } },
+      },
+      series: [{
+        type: 'line',
+        data: values,
+        smooth: true,
+        symbol: 'none',
+        lineStyle: { width: 2, color: lineColor },
+        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: lineColor + '30' }, { offset: 1, color: lineColor + '05' }] } },
+      }],
+    }
   }
 
   const getTrendClass = (value: number | null | undefined) => {
@@ -292,6 +344,31 @@ export default function Dashboard() {
                     {economic.retail?.date || '--'}
                   </span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* 经济指标历史趋势图 */}
+          {economicHistory && (
+            <div className="dashboard__card">
+              <div className="dashboard__card-header">
+                <h2 className="dashboard__card-title">经济指标历史趋势</h2>
+                <span className="dashboard__card-badge">FRED · 近 36 个月</span>
+              </div>
+              <div className="dashboard__chart-grid">
+                {Object.entries(economicHistory).map(([key, indicator]) => (
+                  <div key={key} className="dashboard__chart-cell">
+                    {indicator.data.length > 0 ? (
+                      <ReactECharts
+                        option={getMiniChartOption(indicator.name, indicator.data, indicator.unit)}
+                        style={{ height: 180, width: '100%' }}
+                        opts={{ renderer: 'svg' }}
+                      />
+                    ) : (
+                      <div className="dashboard__chart-empty">暂无数据</div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}

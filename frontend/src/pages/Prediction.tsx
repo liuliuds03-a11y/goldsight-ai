@@ -95,8 +95,15 @@ export default function Prediction() {
     return 'prediction__direction--neutral'
   }
 
-  const supportLevel = prediction?.metadata?.support_level as number | undefined
-  const resistanceLevel = prediction?.metadata?.resistance_level as number | undefined
+  // 从 factors 中提取 key_levels（DeepSeek 返回格式）
+  const keyLevels = prediction?.factors?.find((f) => (f as any).key_levels)
+  const supportLevel = (keyLevels as any)?.key_levels?.support as number | undefined
+  const resistanceLevel = (keyLevels as any)?.key_levels?.resistance as number | undefined
+
+  // 从 factors 中提取 risk_factors（DeepSeek 返回格式）
+  const rawRiskFactors: string[] = prediction?.factors?.[0] && (prediction.factors[0] as any).risk_factors
+    ? (prediction.factors[0] as any).risk_factors
+    : []
   const riskFactors = prediction?.factors?.filter((f) => f.score < 50) || []
 
   /* ── 历史预测趋势图配置 ─────────────────────────────── */
@@ -444,12 +451,12 @@ export default function Prediction() {
               <div className="prediction__card prediction__risk-card">
                 <div className="prediction__card-header">
                   <h2 className="prediction__card-title">风险因素</h2>
-                  <span className="prediction__card-badge">{riskFactors.length} 项</span>
+                  <span className="prediction__card-badge">{riskFactors.length || rawRiskFactors.length} 项</span>
                 </div>
                 <div className="prediction__risk-content">
-                  {riskFactors.length === 0 ? (
+                  {riskFactors.length === 0 && rawRiskFactors.length === 0 ? (
                     <p className="prediction__risk-empty">暂无显著风险因素</p>
-                  ) : (
+                  ) : riskFactors.length > 0 ? (
                     <ul className="prediction__risk-list">
                       {riskFactors.map((factor, index) => (
                         <li key={index} className="prediction__risk-item">
@@ -463,6 +470,14 @@ export default function Prediction() {
                           <div className="prediction__risk-impact">
                             影响程度: {factor.impact}
                           </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="prediction__risk-list">
+                      {rawRiskFactors.map((risk, index) => (
+                        <li key={index} className="prediction__risk-item">
+                          <p className="prediction__risk-evidence">{risk}</p>
                         </li>
                       ))}
                     </ul>

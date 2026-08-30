@@ -3,8 +3,8 @@
 .silver {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 24px;
+  gap: 32px;
+  padding: 32px;
   min-height: 100vh;
 }
 

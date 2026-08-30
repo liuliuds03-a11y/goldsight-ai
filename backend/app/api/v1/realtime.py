@@ -258,6 +258,31 @@ async def _fetch_fred_series(series_id: str, name: str, cache_key: str) -> Dict[
     return {"symbol": series_id, "name": name, "value": None, "error": "数据获取失败", "source": "fred"}
 
 
+async def _fetch_fred_history(series_id: str, months: int = 36) -> list:
+    """从 FRED 获取历史时间序列数据（用于图表）"""
+    try:
+        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
+            r = await client.get(url)
+            if r.status_code == 200:
+                lines = r.text.strip().split("\n")
+                data = []
+                for line in lines[1:]:
+                    parts = line.split(",")
+                    if len(parts) >= 2 and parts[1] != ".":
+                        try:
+                            data.append({
+                                "date": parts[0],
+                                "value": float(parts[1]),
+                            })
+                        except (ValueError, TypeError):
+                            continue
+                return data[-months:] if len(data) > months else data
+    except Exception as e:
+        logger.error(f"FRED 历史数据 {series_id} 获取失败: {e}")
+    return []
+
+
 async def _fetch_fed_funds_rate() -> Dict[str, Any]:
     """联邦基金有效利率"""
     return await _fetch_fred_series("DFF", "Federal Funds Effective Rate", "fed_rate")
@@ -486,6 +511,30 @@ async def get_realtime_economic():
         "retail": retail,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
+
+
+@router.get("/realtime/economic-history")
+async def get_economic_history():
+    """经济指标历史趋势数据（最近 36 个月，用于图表展示）"""
+    import asyncio
+
+    indicators = {
+        "nonfarm": ("PAYEMS", "非农就业", "千人"),
+        "unemployment": ("UNRATE", "失业率", "%"),
+        "gdp": ("A191RL1Q225SBEA", "GDP增速", "%"),
+        "ppi": ("PPIACO", "PPI", "指数"),
+        "retail": ("RSAFS", "零售销售", "百万美元"),
+    }
+
+    async def _fetch_one(key, series_id, name, unit):
+        data = await _fetch_fred_history(series_id, months=36)
+        return key, {"name": name, "unit": unit, "data": data}
+
+    tasks = [_fetch_one(k, sid, nm, u) for k, (sid, nm, u) in indicators.items()]
+    results = await asyncio.gather(*tasks)
+
+    history = {k: v for k, v in results}
+    return success(data=history)
 
 
 @router.get("/realtime/financial-stress")

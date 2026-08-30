@@ -1,0 +1,471 @@
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+/* ── 页面头部 ─────────────────────────────────────────── */
+
+.report__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.report__title {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--color-primary), #f0c040);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.report__subtitle {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  margin: -16px 0 0 0;
+}
+
+.report__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.report__date-picker {
+  padding: 8px 14px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.report__date-picker:focus {
+  border-color: var(--color-primary);
+}
+
+.report__date-picker::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+.report__refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(212, 160, 23, 0.1);
+  border: 1px solid rgba(212, 160, 23, 0.3);
+  border-radius: 8px;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report__refresh-btn:hover:not(:disabled) {
+  background: rgba(212, 160, 23, 0.2);
+  border-color: var(--color-primary);
+}
+
+.report__refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.report__refresh-icon {
+  font-size: 18px;
+  display: inline-block;
+}
+
+.report__refresh-icon.spinning {
+  animation: report-spin 1s linear infinite;
+}
+
+@keyframes report-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── 缓存标记 ─────────────────────────────────────────── */
+
+.report__cached-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(107, 114, 128, 0.15);
+  color: var(--color-text-secondary);
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+/* ── 错误 / 加载状态 ──────────────────────────────────── */
+
+.report__error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  color: var(--color-danger);
+  font-size: 14px;
+}
+
+.report__error-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.7;
+}
+
+.report__error-close:hover {
+  opacity: 1;
+}
+
+.report__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 20px;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+.report__loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: report-spin 0.8s linear infinite;
+}
+
+/* ── 通用卡片 ─────────────────────────────────────────── */
+
+.report__card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  transition: border-color 0.2s;
+}
+
+.report__card:hover {
+  border-color: var(--color-primary);
+}
+
+.report__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.report__card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.report__card-badge {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-primary);
+  background: rgba(212, 160, 23, 0.1);
+  border: 1px solid rgba(212, 160, 23, 0.2);
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+/* ── 市场快照指标网格 ─────────────────────────────────── */
+
+.report__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1280px) {
+  .report__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .report__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.report__indicator-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.report__indicator-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.report__indicator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.report__indicator-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.report__indicator-symbol {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.report__indicator-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.5px;
+}
+
+.report__indicator-extra {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ── 金银比特殊样式 ──────────────────────────────────── */
+
+.report__ratio-card {
+  background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(212, 160, 23, 0.05) 100%);
+}
+
+/* ── 分析摘要区域 ─────────────────────────────────────── */
+
+.report__analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1280px) {
+  .report__analysis-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .report__analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.report__analysis-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition: border-color 0.2s;
+}
+
+.report__analysis-column:hover {
+  border-color: rgba(212, 160, 23, 0.3);
+}
+
+.report__analysis-column--market {
+  border-left: 3px solid #3b82f6;
+}
+
+.report__analysis-column--macro {
+  border-left: 3px solid #8b5cf6;
+}
+
+.report__analysis-column--ai {
+  border-left: 3px solid #22c55e;
+}
+
+.report__analysis-type {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.report__analysis-conclusion {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.report__analysis-stats {
+  display: flex;
+  gap: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.report__analysis-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report__analysis-stat-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.report__analysis-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.report__analysis-stat-value--positive {
+  color: var(--color-success);
+}
+
+.report__analysis-stat-value--negative {
+  color: var(--color-danger);
+}
+
+/* ── 历史报告列表 ─────────────────────────────────────── */
+
+.report__history-card {
+  background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(59, 130, 246, 0.03) 100%);
+}
+
+.report__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report__history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report__history-item:hover {
+  border-color: rgba(212, 160, 23, 0.4);
+  background: rgba(212, 160, 23, 0.04);
+}
+
+.report__history-item--active {
+  border-color: var(--color-primary);
+  background: rgba(212, 160, 23, 0.08);
+}
+
+.report__history-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 110px;
+}
+
+.report__history-gold {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  min-width: 120px;
+}
+
+.report__history-conclusion {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-left: 16px;
+}
+
+.report__history-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+/* ── 响应式调整 ───────────────────────────────────────── */
+
+@media (max-width: 1280px) {
+  .report {
+    padding: 20px;
+  }
+
+  .report__indicator-value {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .report {
+    padding: 16px;
+    gap: 20px;
+  }
+
+  .report__title {
+    font-size: 24px;
+  }
+
+  .report__header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .report__header-actions {
+    width: 100%;
+  }
+
+  .report__history-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .report__history-conclusion {
+    text-align: left;
+    margin-left: 0;
+  }
+}

@@ -5,6 +5,7 @@ import './Header.css'
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard' },
   { path: '/gold', label: '黄金详情' },
+  { path: '/silver', label: '白银详情' },
   { path: '/prediction', label: '预测分析' },
   { path: '/report', label: '研究报告' },
   { path: '/news', label: '新闻资讯' },

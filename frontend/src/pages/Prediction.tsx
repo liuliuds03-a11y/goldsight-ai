@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import ReactECharts from 'echarts-for-react'
 import {
   fetchGoldPrediction,
   triggerGoldPrediction,
+  fetchPredictionHistory,
 } from '@/services'
 import type { PredictionResult } from '@/types'
 import './Prediction.css'
@@ -14,10 +16,28 @@ export default function Prediction() {
   const [prediction, setPrediction] = useState<PredictionResult | null>(null)
   const [cacheInfo, setCacheInfo] = useState<string>('')
   const [isCached, setIsCached] = useState(false)
+  const [history, setHistory] = useState<PredictionResult[]>([])
 
   // 加载数据：只从数据库读缓存，不调 DeepSeek
   useEffect(() => {
     loadData()
+    loadHistory()
+  }, [])
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetchPredictionHistory(1, 30)
+      const records = res.data.records || []
+      // 按时间正序排列（图表用）
+      records.sort(
+        (a, b) =>
+          new Date(a.generated_at ?? 0).getTime() -
+          new Date(b.generated_at ?? 0).getTime(),
+      )
+      setHistory(records)
+    } catch {
+      // 历史数据加载失败不影响主流程
+    }
   }, [])
 
   async function loadData() {
@@ -78,6 +98,155 @@ export default function Prediction() {
   const supportLevel = prediction?.metadata?.support_level as number | undefined
   const resistanceLevel = prediction?.metadata?.resistance_level as number | undefined
   const riskFactors = prediction?.factors?.filter((f) => f.score < 50) || []
+
+  /* ── 历史预测趋势图配置 ─────────────────────────────── */
+  const trendChartOption = useMemo(() => {
+    if (history.length === 0) return {}
+    const dates = history.map((h) =>
+      h.generated_at ? new Date(h.generated_at).toLocaleDateString() : '--',
+    )
+    const targetPrices = history.map((h) => h.data_range?.target_price ?? null)
+    const confidences = history.map((h) =>
+      h.confidence != null ? +(h.confidence * 100).toFixed(1) : null,
+    )
+    return {
+      backgroundColor: '#1e2130',
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'rgba(30,33,48,0.95)',
+        borderColor: '#2d3040',
+        textStyle: { color: '#e4e6eb', fontSize: 12 },
+      },
+      legend: {
+        data: ['目标价', '置信度'],
+        textStyle: { color: '#8b8e98', fontSize: 12 },
+        top: 8,
+      },
+      grid: { left: 70, right: 70, top: 50, bottom: 40 },
+      xAxis: {
+        type: 'category',
+        data: dates,
+        axisLine: { lineStyle: { color: '#2d3040' } },
+        axisLabel: { color: '#8b8e98', fontSize: 11, rotate: dates.length > 10 ? 30 : 0 },
+        splitLine: { show: false },
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: '目标价 ($)',
+          nameTextStyle: { color: '#8b8e98', fontSize: 11 },
+          scale: true,
+          axisLine: { show: false },
+          axisLabel: { color: '#8b8e98', fontSize: 11, formatter: (v: number) => v.toFixed(0) },
+          splitLine: { lineStyle: { color: '#2d3040', type: 'dashed' } },
+        },
+        {
+          type: 'value',
+          name: '置信度 (%)',
+          nameTextStyle: { color: '#8b8e98', fontSize: 11 },
+          min: 0,
+          max: 100,
+          axisLine: { show: false },
+          axisLabel: { color: '#8b8e98', fontSize: 11, formatter: (v: number) => `${v}%` },
+          splitLine: { show: false },
+        },
+      ],
+      series: [
+        {
+          name: '目标价',
+          type: 'line',
+          data: targetPrices,
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { width: 2, color: '#d4a017' },
+          itemStyle: { color: '#d4a017' },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(212,160,23,0.20)' },
+                { offset: 1, color: 'rgba(212,160,23,0.02)' },
+              ],
+            },
+          },
+          connectNulls: true,
+        },
+        {
+          name: '置信度',
+          type: 'line',
+          yAxisIndex: 1,
+          data: confidences,
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { width: 2, color: '#3b82f6' },
+          itemStyle: { color: '#3b82f6' },
+          connectNulls: true,
+        },
+      ],
+    }
+  }, [history])
+
+  /* ── 因素分析条形图配置 ─────────────────────────────── */
+  const factorChartOption = useMemo(() => {
+    if (!prediction?.factors?.length) return {}
+    const sorted = [...prediction.factors].sort((a, b) => a.score - b.score)
+    const names = sorted.map((f) => f.name)
+    const scores = sorted.map((f) => f.score)
+    const colors = sorted.map((f) => (f.score >= 50 ? '#22c55e' : '#ef4444'))
+    return {
+      backgroundColor: '#1e2130',
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'rgba(30,33,48,0.95)',
+        borderColor: '#2d3040',
+        textStyle: { color: '#e4e6eb', fontSize: 12 },
+        formatter: (params: Array<{ name: string; value: number }>) => {
+          const p = params[0]
+          return `${p.name}<br/>评分: ${p.value.toFixed(1)}`
+        },
+      },
+      grid: { left: 140, right: 40, top: 20, bottom: 20 },
+      xAxis: {
+        type: 'value',
+        min: 0,
+        max: 100,
+        axisLine: { show: false },
+        axisLabel: { color: '#8b8e98', fontSize: 11 },
+        splitLine: { lineStyle: { color: '#2d3040', type: 'dashed' } },
+      },
+      yAxis: {
+        type: 'category',
+        data: names,
+        axisLine: { lineStyle: { color: '#2d3040' } },
+        axisLabel: { color: '#8b8e98', fontSize: 11, width: 120, overflow: 'truncate' },
+      },
+      series: [
+        {
+          type: 'bar',
+          data: scores.map((v, i) => ({
+            value: v,
+            itemStyle: { color: colors[i] },
+          })),
+          barWidth: 16,
+          label: {
+            show: true,
+            position: 'right',
+            color: '#8b8e98',
+            fontSize: 11,
+            formatter: (p: { value: number }) => p.value.toFixed(1),
+          },
+        },
+      ],
+    }
+  }, [prediction])
+
+  /* ── 历史表格数据（最近 10 条，倒序） ────────────────── */
+  const tableRecords = useMemo(() => {
+    return [...history].slice(-10).reverse()
+  }, [history])
 
   return (
     <div className="prediction">
@@ -239,6 +408,38 @@ export default function Prediction() {
                 </div>
               </div>
 
+              {/* 历史预测趋势图 */}
+              {history.length > 1 && (
+                <div className="prediction__card prediction__trend-card">
+                  <div className="prediction__card-header">
+                    <h2 className="prediction__card-title">历史预测趋势</h2>
+                    <span className="prediction__card-badge">近 {history.length} 条记录</span>
+                  </div>
+                  <ReactECharts
+                    option={trendChartOption}
+                    style={{ height: 360, width: '100%' }}
+                    opts={{ renderer: 'canvas' }}
+                    notMerge
+                  />
+                </div>
+              )}
+
+              {/* 因素分析可视化 */}
+              {prediction.factors && prediction.factors.length > 0 && (
+                <div className="prediction__card prediction__factor-card">
+                  <div className="prediction__card-header">
+                    <h2 className="prediction__card-title">因素分析</h2>
+                    <span className="prediction__card-badge">{prediction.factors.length} 项因素</span>
+                  </div>
+                  <ReactECharts
+                    option={factorChartOption}
+                    style={{ height: Math.max(200, prediction.factors.length * 36 + 40), width: '100%' }}
+                    opts={{ renderer: 'canvas' }}
+                    notMerge
+                  />
+                </div>
+              )}
+
               {/* 风险因素 */}
               <div className="prediction__card prediction__risk-card">
                 <div className="prediction__card-header">
@@ -268,6 +469,66 @@ export default function Prediction() {
                   )}
                 </div>
               </div>
+
+              {/* 历史预测记录表格 */}
+              {tableRecords.length > 0 && (
+                <div className="prediction__card prediction__history-card">
+                  <div className="prediction__card-header">
+                    <h2 className="prediction__card-title">历史预测记录</h2>
+                    <span className="prediction__card-badge">最近 10 条</span>
+                  </div>
+                  <div className="prediction__table-wrap">
+                    <table className="prediction__table">
+                      <thead>
+                        <tr>
+                          <th>日期</th>
+                          <th>方向</th>
+                          <th>目标价</th>
+                          <th>置信度</th>
+                          <th>评分</th>
+                          <th>来源</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tableRecords.map((r, idx) => (
+                          <tr key={r.id ?? idx}>
+                            <td>
+                              {r.generated_at
+                                ? new Date(r.generated_at).toLocaleDateString()
+                                : '--'}
+                            </td>
+                            <td>
+                              <span
+                                className={`prediction__table-direction ${
+                                  r.score >= 70
+                                    ? 'prediction__table-direction--bullish'
+                                    : r.score <= 30
+                                      ? 'prediction__table-direction--bearish'
+                                      : 'prediction__table-direction--neutral'
+                                }`}
+                              >
+                                {getDirectionLabel(r.score)}
+                              </span>
+                            </td>
+                            <td>${formatNumber(r.data_range?.target_price)}</td>
+                            <td>
+                              {r.confidence != null
+                                ? `${(r.confidence * 100).toFixed(0)}%`
+                                : '--'}
+                            </td>
+                            <td>{formatNumber(r.score, 1)}</td>
+                            <td>
+                              <span className="prediction__table-source">
+                                {r.source === 'ai' ? '🤖 AI' : '📦 缓存'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </>

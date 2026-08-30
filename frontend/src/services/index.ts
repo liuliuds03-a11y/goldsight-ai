@@ -41,3 +41,13 @@ export type {
   RealtimeStock,
   RealtimeAll,
 } from './realtimeService'
+export {
+  fetchDailyReport,
+  fetchReportHistory,
+} from './reportService'
+export type {
+  DailyReport,
+  MarketSnapshot,
+  AnalysisSummaryReport,
+  ReportHistoryItem,
+} from './reportService'

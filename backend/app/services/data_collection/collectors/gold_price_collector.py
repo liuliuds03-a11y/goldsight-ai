@@ -53,7 +53,7 @@ class GoldPriceCollector(BaseCollector):
         kwargs:
             days: 获取最近 N 天数据（默认 5）
         """
-        days = kwargs.get("days", 5)
+        days = kwargs.get("days", 120)
 
         async with httpx.AsyncClient(timeout=20) as client:
             # 获取黄金价格（PLN/克）

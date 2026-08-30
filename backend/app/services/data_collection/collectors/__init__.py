@@ -8,9 +8,19 @@ GoldSight AI V3.0 - 数据采集器集合
 from .gold_price_collector import GoldPriceCollector
 from .usd_data_collector import UsdDataCollector
 from .treasury_yield_collector import TreasuryYieldCollector
+from .treasury_yield_2y_collector import TreasuryYield2YCollector
+from .oil_price_collector import OilPriceCollector
+from .stock_market_collector import StockMarketCollector
+from .economic_indicator_collector import EconomicIndicatorCollector
+from .vix_collector import VixCollector
 
 __all__ = [
     "GoldPriceCollector",
     "UsdDataCollector",
     "TreasuryYieldCollector",
+    "TreasuryYield2YCollector",
+    "OilPriceCollector",
+    "StockMarketCollector",
+    "EconomicIndicatorCollector",
+    "VixCollector",
 ]

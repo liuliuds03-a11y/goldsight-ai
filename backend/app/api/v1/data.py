@@ -5,6 +5,11 @@ GoldSight AI V3.0 - 数据采集 API 端点
 - GET /api/v1/data/gold-prices     — 查询黄金价格数据
 - GET /api/v1/data/usd             — 查询美元数据
 - GET /api/v1/data/treasury-yields — 查询国债收益率
+- GET /api/v1/data/oil             — 查询原油价格数据
+- GET /api/v1/data/stock-market    — 查询美股/指数数据
+- GET /api/v1/data/precious-metals — 查询贵金属数据
+- GET /api/v1/data/economic        — 查询经济指标数据
+- GET /api/v1/data/stats           — 各表数据统计概览
 - GET /api/v1/data/collectors      — 列出已注册采集器
 - POST /api/v1/data/collect/{name} — 手动触发采集
 """
@@ -227,6 +232,296 @@ async def get_treasury_yields(
         "limit": limit,
         "offset": offset,
     })
+
+
+# ── 原油数据查询 ──────────────────────────────────────────────
+
+
+@router.get("/data/oil")
+async def get_oil_data(
+    start_date: Optional[datetime] = Query(None, description="起始日期"),
+    end_date: Optional[datetime] = Query(None, description="结束日期"),
+    oil_type: Optional[str] = Query(None, description="原油类型（如 wti）"),
+    limit: int = Query(50, ge=1, le=1000, description="返回条数"),
+    offset: int = Query(0, ge=0, description="偏移量"),
+    source: Optional[str] = Query(None, description="数据源过滤"),
+    db: AsyncSession = Depends(get_db),
+):
+    """查询已采集的原油价格数据"""
+    conditions = []
+    params: dict = {"limit": limit, "offset": offset}
+
+    if start_date:
+        conditions.append("timestamp >= :start_date")
+        params["start_date"] = start_date
+    if end_date:
+        conditions.append("timestamp <= :end_date")
+        params["end_date"] = end_date
+    if oil_type:
+        conditions.append("oil_type = :oil_type")
+        params["oil_type"] = oil_type
+    if source:
+        conditions.append("source = :source")
+        params["source"] = source
+
+    where_clause = ""
+    if conditions:
+        where_clause = "WHERE " + " AND ".join(conditions)
+
+    query_sql = text(
+        f"SELECT id, timestamp, oil_type, "
+        f"open, high, low, close, change_value, change_pct, "
+        f"source, collected_at, quality_status "
+        f"FROM oil_data {where_clause} "
+        f"ORDER BY timestamp DESC LIMIT :limit OFFSET :offset"
+    )
+    result = await db.execute(query_sql, params)
+    rows = result.fetchall()
+    columns = result.keys()
+    records = [dict(zip(columns, row)) for row in rows]
+
+    count_sql = text(f"SELECT COUNT(*) FROM oil_data {where_clause}")
+    count_result = await db.execute(count_sql, params)
+    total = count_result.scalar()
+
+    for r in records:
+        for key in ("timestamp", "collected_at"):
+            if isinstance(r.get(key), datetime):
+                r[key] = r[key].isoformat()
+        for key in ("open", "high", "low", "close", "change_value", "change_pct"):
+            if r.get(key) is not None:
+                r[key] = float(r[key])
+
+    return success(data={
+        "records": records,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })
+
+
+# ── 美股/指数数据查询 ────────────────────────────────────────────
+
+
+@router.get("/data/stock-market")
+async def get_stock_market_data(
+    start_date: Optional[datetime] = Query(None, description="起始日期"),
+    end_date: Optional[datetime] = Query(None, description="结束日期"),
+    index_symbol: Optional[str] = Query(None, description="指数符号（如 SPX, VIX）"),
+    limit: int = Query(50, ge=1, le=1000, description="返回条数"),
+    offset: int = Query(0, ge=0, description="偏移量"),
+    source: Optional[str] = Query(None, description="数据源过滤"),
+    db: AsyncSession = Depends(get_db),
+):
+    """查询已采集的美股/指数数据"""
+    conditions = []
+    params: dict = {"limit": limit, "offset": offset}
+
+    if start_date:
+        conditions.append("timestamp >= :start_date")
+        params["start_date"] = start_date
+    if end_date:
+        conditions.append("timestamp <= :end_date")
+        params["end_date"] = end_date
+    if index_symbol:
+        conditions.append("index_symbol = :index_symbol")
+        params["index_symbol"] = index_symbol
+    if source:
+        conditions.append("source = :source")
+        params["source"] = source
+
+    where_clause = ""
+    if conditions:
+        where_clause = "WHERE " + " AND ".join(conditions)
+
+    query_sql = text(
+        f"SELECT id, timestamp, index_symbol, "
+        f"open, high, low, close, change_value, change_pct, "
+        f"source, collected_at, quality_status "
+        f"FROM stock_market {where_clause} "
+        f"ORDER BY timestamp DESC LIMIT :limit OFFSET :offset"
+    )
+    result = await db.execute(query_sql, params)
+    rows = result.fetchall()
+    columns = result.keys()
+    records = [dict(zip(columns, row)) for row in rows]
+
+    count_sql = text(f"SELECT COUNT(*) FROM stock_market {where_clause}")
+    count_result = await db.execute(count_sql, params)
+    total = count_result.scalar()
+
+    for r in records:
+        for key in ("timestamp", "collected_at"):
+            if isinstance(r.get(key), datetime):
+                r[key] = r[key].isoformat()
+        for key in ("open", "high", "low", "close", "change_value", "change_pct"):
+            if r.get(key) is not None:
+                r[key] = float(r[key])
+
+    return success(data={
+        "records": records,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })
+
+
+# ── 贵金属数据查询 ────────────────────────────────────────────
+
+
+@router.get("/data/precious-metals")
+async def get_precious_metals_data(
+    start_date: Optional[datetime] = Query(None, description="起始日期"),
+    end_date: Optional[datetime] = Query(None, description="结束日期"),
+    metal: Optional[str] = Query(None, description="金属类型（如 silver）"),
+    limit: int = Query(50, ge=1, le=1000, description="返回条数"),
+    offset: int = Query(0, ge=0, description="偏移量"),
+    source: Optional[str] = Query(None, description="数据源过滤"),
+    db: AsyncSession = Depends(get_db),
+):
+    """查询已采集的贵金属数据"""
+    conditions = []
+    params: dict = {"limit": limit, "offset": offset}
+
+    if start_date:
+        conditions.append("timestamp >= :start_date")
+        params["start_date"] = start_date
+    if end_date:
+        conditions.append("timestamp <= :end_date")
+        params["end_date"] = end_date
+    if metal:
+        conditions.append("metal = :metal")
+        params["metal"] = metal
+    if source:
+        conditions.append("source = :source")
+        params["source"] = source
+
+    where_clause = ""
+    if conditions:
+        where_clause = "WHERE " + " AND ".join(conditions)
+
+    query_sql = text(
+        f"SELECT id, timestamp, metal, symbol, "
+        f"open, high, low, close, change_value, change_pct, "
+        f"source, collected_at, quality_status "
+        f"FROM precious_metals {where_clause} "
+        f"ORDER BY timestamp DESC LIMIT :limit OFFSET :offset"
+    )
+    result = await db.execute(query_sql, params)
+    rows = result.fetchall()
+    columns = result.keys()
+    records = [dict(zip(columns, row)) for row in rows]
+
+    count_sql = text(f"SELECT COUNT(*) FROM precious_metals {where_clause}")
+    count_result = await db.execute(count_sql, params)
+    total = count_result.scalar()
+
+    for r in records:
+        for key in ("timestamp", "collected_at"):
+            if isinstance(r.get(key), datetime):
+                r[key] = r[key].isoformat()
+        for key in ("open", "high", "low", "close", "change_value", "change_pct"):
+            if r.get(key) is not None:
+                r[key] = float(r[key])
+
+    return success(data={
+        "records": records,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })
+
+
+# ── 经济指标数据查询 ────────────────────────────────────────────
+
+
+@router.get("/data/economic")
+async def get_economic_data(
+    start_date: Optional[datetime] = Query(None, description="起始日期"),
+    end_date: Optional[datetime] = Query(None, description="结束日期"),
+    indicator_type: Optional[str] = Query(None, description="指标类型（如 cpi）"),
+    limit: int = Query(50, ge=1, le=1000, description="返回条数"),
+    offset: int = Query(0, ge=0, description="偏移量"),
+    source: Optional[str] = Query(None, description="数据源过滤"),
+    db: AsyncSession = Depends(get_db),
+):
+    """查询已采集的经济指标数据"""
+    conditions = []
+    params: dict = {"limit": limit, "offset": offset}
+
+    if start_date:
+        conditions.append("timestamp >= :start_date")
+        params["start_date"] = start_date
+    if end_date:
+        conditions.append("timestamp <= :end_date")
+        params["end_date"] = end_date
+    if indicator_type:
+        conditions.append("indicator_type = :indicator_type")
+        params["indicator_type"] = indicator_type
+    if source:
+        conditions.append("source = :source")
+        params["source"] = source
+
+    where_clause = ""
+    if conditions:
+        where_clause = "WHERE " + " AND ".join(conditions)
+
+    query_sql = text(
+        f"SELECT id, timestamp, indicator_type, period, "
+        f"actual_value, revised_value, consensus, previous_value, unit, "
+        f"source, collected_at, quality_status "
+        f"FROM economic_indicators {where_clause} "
+        f"ORDER BY timestamp DESC LIMIT :limit OFFSET :offset"
+    )
+    result = await db.execute(query_sql, params)
+    rows = result.fetchall()
+    columns = result.keys()
+    records = [dict(zip(columns, row)) for row in rows]
+
+    count_sql = text(f"SELECT COUNT(*) FROM economic_indicators {where_clause}")
+    count_result = await db.execute(count_sql, params)
+    total = count_result.scalar()
+
+    for r in records:
+        for key in ("timestamp", "collected_at"):
+            if isinstance(r.get(key), datetime):
+                r[key] = r[key].isoformat()
+        for key in ("actual_value", "revised_value", "consensus", "previous_value"):
+            if r.get(key) is not None:
+                r[key] = float(r[key])
+
+    return success(data={
+        "records": records,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })
+
+
+# ── 数据统计概览 ──────────────────────────────────────────────
+
+
+@router.get("/data/stats")
+async def get_data_stats(
+    db: AsyncSession = Depends(get_db),
+):
+    """获取各数据表的记录统计"""
+    tables = [
+        "gold_prices", "usd_data", "treasury_yields",
+        "oil_data", "stock_market", "precious_metals",
+        "economic_indicators", "technical_indicators",
+    ]
+    stats = {}
+    for table in tables:
+        try:
+            sql = text(f"SELECT COUNT(*) FROM {table}")
+            result = await db.execute(sql)
+            count = result.scalar()
+            stats[table] = count
+        except Exception as e:
+            stats[table] = f"error: {e}"
+
+    return success(data={"table_counts": stats})
 
 
 # ── 采集器管理 ────────────────────────────────────────────────

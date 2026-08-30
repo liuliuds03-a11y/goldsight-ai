@@ -40,8 +40,8 @@ async def main():
         help="列出所有已注册采集器",
     )
     parser.add_argument(
-        "--period", type=str, default="5d",
-        help="数据周期（默认 5d）",
+        "--days", type=int, default=120,
+        help="历史数据天数（默认 120，确保 90+ 交易日）",
     )
     args = parser.parse_args()
 
@@ -70,14 +70,14 @@ async def main():
     # 运行指定采集器
     if args.collector:
         print(f"正在运行采集器: {args.collector} ...")
-        result = await pipeline.run(args.collector, period=args.period)
+        result = await pipeline.run(args.collector, days=args.days)
         _print_result(result)
         return
 
     # 运行所有采集器
     if args.all:
         print("正在运行所有采集器...")
-        results = await pipeline.run_all(period=args.period)
+        results = await pipeline.run_all(days=args.days)
         for result in results:
             _print_result(result)
         return

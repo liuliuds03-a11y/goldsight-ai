@@ -50,7 +50,7 @@ class UsdDataCollector(BaseCollector):
         kwargs:
             days: 获取最近 N 天数据（默认 5）
         """
-        days = kwargs.get("days", 5)
+        days = kwargs.get("days", 120)
 
         end_date = datetime.utcnow().date()
         start_date = end_date - timedelta(days=days + 5)  # 多取几天确保有足够交易日

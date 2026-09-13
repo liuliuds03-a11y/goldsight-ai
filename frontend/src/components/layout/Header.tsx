@@ -3,12 +3,12 @@ import './Header.css'
 
 /** 导航菜单项 */
 const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard' },
-  { path: '/gold', label: '黄金详情' },
-  { path: '/silver', label: '白银详情' },
-  { path: '/prediction', label: '预测分析' },
-  { path: '/report', label: '研究报告' },
-  { path: '/news', label: '新闻资讯' },
+  { path: '/', label: '总览' },
+  { path: '/gold', label: '黄金' },
+  { path: '/silver', label: '白银' },
+  { path: '/prediction', label: '预测' },
+  { path: '/report', label: '报告' },
+  { path: '/news', label: '新闻' },
 ]
 
 export default function Header() {
@@ -37,7 +37,7 @@ export default function Header() {
         </nav>
 
         <div className="header__actions">
-          <span className="header__status">v0.1.0</span>
+          <span className="header__status">GoldSight V3.0</span>
         </div>
       </div>
     </header>

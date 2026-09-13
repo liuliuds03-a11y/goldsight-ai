@@ -163,6 +163,7 @@ export default function News() {
         <div className="news__error">
           <span className="news__error-icon">⚠</span>
           <span>{error}</span>
+          <button className="news__error-retry" onClick={() => loadNews()}>重试</button>
         </div>
       )}
 

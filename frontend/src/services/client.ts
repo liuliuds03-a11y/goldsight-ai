@@ -63,8 +63,11 @@ client.interceptors.response.use(
       }
     } else if (error.code === 'ECONNABORTED') {
       console.error('[请求超时] 请稍后重试')
+      // 将英文超时错误转为中文提示
+      error.message = '请求超时，请稍后重试'
     } else {
       console.error('[网络错误] 请检查网络连接')
+      error.message = '网络连接失败，请检查网络'
     }
 
     return Promise.reject(error)

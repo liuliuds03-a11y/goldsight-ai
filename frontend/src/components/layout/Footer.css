@@ -21,6 +21,7 @@
 
 .footer__disclaimer {
   font-size: 12px;
-  color: var(--color-warning);
-  opacity: 0.8;
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+  font-style: italic;
 }

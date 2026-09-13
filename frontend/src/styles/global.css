@@ -70,3 +70,37 @@ a:hover {
 ::-webkit-scrollbar-thumb:hover {
   background: #3d4055;
 }
+
+/* 平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 页面内容淡入动画 */
+.layout__content > * {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 选中文字样式 */
+::selection {
+  background: rgba(212, 160, 23, 0.3);
+  color: var(--color-text);
+}
+
+/* 焦点样式 */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

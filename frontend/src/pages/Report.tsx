@@ -379,7 +379,11 @@ export default function Report() {
                 ))}
               </div>
             ) : (
-              <div className="report__history-empty">暂无历史报告数据</div>
+              <div className="report__history-empty">
+                <span className="report__history-empty-icon">📊</span>
+                <span>暂无历史报告数据</span>
+                <span style={{ fontSize: 12 }}>刷新页面或等待系统自动生成报告</span>
+              </div>
             )}
           </div>
         </>

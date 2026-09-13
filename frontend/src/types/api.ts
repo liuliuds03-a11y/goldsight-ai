@@ -124,6 +124,26 @@ export interface StockMarketRecord {
   quality_status: string
 }
 
+/* ── 贵金属 ─────────────────────────────────────────── */
+
+/** 贵金属记录（白银、铂金等） */
+export interface PreciousMetalRecord {
+  id: number
+  timestamp: string
+  metal: string
+  symbol: string
+  open: number | null
+  high: number | null
+  low: number | null
+  close: number | null
+  change_value: number | null
+  change_pct: number | null
+  volume: number | null
+  source: string
+  collected_at: string
+  quality_status: string
+}
+
 /* ── 技术指标 ─────────────────────────────────────────── */
 
 /** 技术指标记录 */

@@ -8,6 +8,7 @@ import type {
   TechnicalIndicatorRecord,
   DataQueryResponse,
   DataStats,
+  PreciousMetalRecord,
 } from '@/types'
 
 /** 获取黄金价格数据 */
@@ -66,6 +67,17 @@ export function fetchIndicators(params?: {
 /** 触发技术指标计算 */
 export function triggerIndicatorCalculation(_symbol = 'XAUUSD') {
   return post<Record<string, unknown>>('/indicators/calculate', null)
+}
+
+/** 获取贵金属数据（白银等） */
+export function fetchPreciousMetals(params?: {
+  limit?: number
+  offset?: number
+  metal?: string
+  start_date?: string
+  end_date?: string
+}) {
+  return get<DataQueryResponse<PreciousMetalRecord>>('/data/precious-metals', params as Record<string, unknown>)
 }
 
 /** 获取数据统计概览 */

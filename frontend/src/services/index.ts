@@ -6,6 +6,7 @@ export {
   fetchTreasuryYields,
   fetchOilData,
   fetchStockMarketData,
+  fetchPreciousMetals,
   fetchIndicators,
   triggerIndicatorCalculation,
   fetchDataStats,

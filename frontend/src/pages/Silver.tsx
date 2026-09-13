@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
-import { fetchRealtimeAll, refreshRealtime } from '@/services'
+import ReactECharts from 'echarts-for-react'
+import { fetchPreciousMetals, fetchRealtimeAll, refreshRealtime } from '@/services'
 import type { RealtimeAll } from '@/services'
+import type { PreciousMetalRecord } from '@/types'
 import './Silver.css'
 
 /** 白银基本面静态数据 */
 const FUNDAMENTALS = [
   {
-    icon: '⛏️',
+    icon: '️',
     title: '矿产供应',
     items: [
       '全球白银年产量约 2.6 万吨',
@@ -16,7 +18,7 @@ const FUNDAMENTALS = [
     ],
   },
   {
-    icon: '🏭',
+    icon: '',
     title: '工业需求',
     items: [
       '光伏产业为最大工业需求来源（占 20%+）',
@@ -51,6 +53,7 @@ export default function Silver() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [prices, setPrices] = useState<PreciousMetalRecord[]>([])
   const [realtimeSilver, setRealtimeSilver] = useState<RealtimeAll['silver']>(null)
   const [realtimeGold, setRealtimeGold] = useState<RealtimeAll['gold'] | null>(null)
 
@@ -59,9 +62,18 @@ export default function Silver() {
       setLoading(true)
       setError(null)
 
-      const realtimeRes = await fetchRealtimeAll()
-      const rt = realtimeRes.data
+      const [priceRes, realtimeRes] = await Promise.all([
+        fetchPreciousMetals({ metal: 'silver', limit: 120 }),
+        fetchRealtimeAll(),
+      ])
 
+      const priceRecords = priceRes.data.records
+      priceRecords.sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      )
+      setPrices(priceRecords)
+
+      const rt = realtimeRes.data
       setRealtimeSilver(rt.silver)
       setRealtimeGold(rt.gold)
     } catch (err) {
@@ -88,7 +100,7 @@ export default function Silver() {
     }
   }
 
-  /* ── 金银比 ──────────────────────────────────────── */
+  /* ── 金银比 ─────────────────────────────────────── */
   const goldSilverRatio = useMemo(() => {
     if (realtimeGold?.price && realtimeSilver?.price) {
       return (realtimeGold.price / realtimeSilver.price).toFixed(1)
@@ -105,8 +117,101 @@ export default function Silver() {
     return { level: '偏高', desc: '白银相对弱势，历史上此区间往往预示白银补涨', cls: 'high' }
   }, [goldSilverRatio])
 
+  /* ── 图表配置 ──────────────────────────────────────── */
+  const chartOption = useMemo(() => {
+    if (prices.length === 0) return {}
+
+    const dates = prices.map((p) => p.timestamp.slice(0, 10))
+    const closePrices = prices.map((p) => p.close)
+
+    return {
+      backgroundColor: '#1e2130',
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'rgba(30,33,48,0.95)',
+        borderColor: '#2d3040',
+        textStyle: { color: '#e4e6eb', fontSize: 12 },
+        axisPointer: { type: 'cross' },
+      },
+      legend: {
+        data: ['收盘价'],
+        textStyle: { color: '#8b8e98', fontSize: 12 },
+        top: 8,
+      },
+      grid: { left: 60, right: 40, top: 50, bottom: 70 },
+      dataZoom: [
+        { type: 'inside', start: 0, end: 100 },
+        {
+          type: 'slider',
+          start: 0,
+          end: 100,
+          height: 24,
+          bottom: 10,
+          borderColor: '#2d3040',
+          backgroundColor: '#1a1d27',
+          fillerColor: 'rgba(192,192,192,0.15)',
+          handleStyle: { color: '#c0c0c0' },
+          textStyle: { color: '#8b8e98' },
+        },
+      ],
+      xAxis: {
+        type: 'category',
+        data: dates,
+        axisLine: { lineStyle: { color: '#2d3040' } },
+        axisLabel: { color: '#8b8e98', fontSize: 11 },
+        splitLine: { show: false },
+      },
+      yAxis: {
+        type: 'value',
+        scale: true,
+        axisLine: { show: false },
+        axisLabel: {
+          color: '#8b8e98',
+          fontSize: 11,
+          formatter: (v: number) => v.toFixed(2),
+        },
+        splitLine: { lineStyle: { color: '#2d3040', type: 'dashed' } },
+      },
+      series: [
+        {
+          name: '收盘价',
+          type: 'line',
+          data: closePrices,
+          smooth: true,
+          symbol: 'none',
+          lineStyle: { width: 2, color: '#c0c0c0' },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(192,192,192,0.25)' },
+                { offset: 1, color: 'rgba(192,192,192,0.02)' },
+              ],
+            },
+          },
+          itemStyle: { color: '#c0c0c0' },
+        },
+      ],
+    }
+  }, [prices])
+
+  const tableRecords = useMemo(() => {
+    return [...prices].slice(-10).reverse()
+  }, [prices])
+
   const fmt = (v: number | null | undefined, d = 2) =>
     v != null ? v.toFixed(d) : '--'
+
+  const changeClass = (v: number | null | undefined) => {
+    if (v == null) return 'silver__table-change--neutral'
+    return v >= 0 ? 'silver__table-change--up' : 'silver__table-change--down'
+  }
+
+  const changeSign = (v: number | null | undefined) => {
+    if (v == null) return ''
+    return v >= 0 ? '+' : ''
+  }
 
   return (
     <div className="silver">
@@ -114,7 +219,7 @@ export default function Silver() {
       <div className="silver__realtime-header">
         <div className="silver__realtime-info">
           <h1 className="silver__title">白银详情</h1>
-          <p className="silver__subtitle">XAG/USD 行情走势</p>
+          <p className="silver__subtitle">XAG/USD 行情走势与基本面分析</p>
         </div>
         <div className="silver__realtime-cards">
           {/* 实时银价 */}
@@ -148,7 +253,7 @@ export default function Silver() {
             className="silver__refresh-btn"
             onClick={handleRefresh}
             disabled={refreshing}
-            title="刷新实时数据"
+            title="刷新所有数据"
           >
             <span className={refreshing ? 'silver__refresh-icon--spinning' : ''}>↻</span>
             {refreshing ? '刷新中' : '刷新'}
@@ -172,13 +277,67 @@ export default function Silver() {
 
       {!loading && !error && (
         <>
-          {/* 数据不可用提示 */}
-          <div className="silver__notice">
-            <span className="silver__notice-icon">ℹ️</span>
-            <span>
-              白银历史价格走势图与交易记录数据正在接入中，当前页面展示基本面信息与金银比分析。
-            </span>
-          </div>
+          {/* 价格走势图 */}
+          {prices.length > 0 && (
+            <section className="silver__card silver__chart-card">
+              <div className="silver__card-header">
+                <h2 className="silver__card-title">历史价格走势</h2>
+                <span className="silver__card-badge">近 120 天</span>
+              </div>
+              <ReactECharts
+                option={chartOption}
+                style={{ height: 420, width: '100%' }}
+                opts={{ renderer: 'canvas' }}
+                notMerge
+              />
+            </section>
+          )}
+
+          {/* 数据表格 */}
+          {prices.length > 0 && (
+            <section className="silver__card silver__table-card">
+              <div className="silver__card-header">
+                <h2 className="silver__card-title">最近交易记录</h2>
+                <span className="silver__card-badge">最近 10 条</span>
+              </div>
+              <div className="silver__table-wrap">
+                <table className="silver__table">
+                  <thead>
+                    <tr>
+                      <th>日期</th>
+                      <th>开盘价</th>
+                      <th>最高价</th>
+                      <th>最低价</th>
+                      <th>收盘价</th>
+                      <th>涨跌幅</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableRecords.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="silver__table-empty">
+                          暂无数据
+                        </td>
+                      </tr>
+                    )}
+                    {tableRecords.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.timestamp.slice(0, 10)}</td>
+                        <td>${fmt(r.open)}</td>
+                        <td>${fmt(r.high)}</td>
+                        <td>${fmt(r.low)}</td>
+                        <td>${fmt(r.close)}</td>
+                        <td className={`silver__table-change ${changeClass(r.change_pct)}`}>
+                          {changeSign(r.change_pct)}
+                          {fmt(r.change_pct)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
 
           {/* 白银基本面信息 */}
           <section className="silver__card">

@@ -13,6 +13,7 @@ from .oil_price_collector import OilPriceCollector
 from .stock_market_collector import StockMarketCollector
 from .economic_indicator_collector import EconomicIndicatorCollector
 from .vix_collector import VixCollector
+from .silver_price_collector import SilverPriceCollector
 
 __all__ = [
     "GoldPriceCollector",
@@ -23,4 +24,5 @@ __all__ = [
     "StockMarketCollector",
     "EconomicIndicatorCollector",
     "VixCollector",
+    "SilverPriceCollector",
 ]

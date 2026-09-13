@@ -286,6 +286,46 @@
   font-size: 14px;
 }
 
+/* ── 图表切换按钮 ──────────────────────────────────────── */
+
+.gold__chart-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gold__chart-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.gold__chart-toggle-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gold__chart-toggle-btn:hover {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.gold__chart-toggle-btn.active {
+  color: var(--color-primary);
+  background: rgba(212, 160, 23, 0.15);
+  border: 1px solid rgba(212, 160, 23, 0.3);
+}
+
 /* ── 响应式 ────────────────────────────────────────────── */
 
 @media (max-width: 1280px) {

@@ -35,6 +35,49 @@
   margin-bottom: 16px;
 }
 
+.dashboard__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 自动刷新控制 */
+.dashboard__auto-refresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.dashboard__auto-refresh-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dashboard__auto-refresh-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.dashboard__countdown {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+  text-align: right;
+}
+
 /* 刷新按钮 */
 .dashboard__refresh-btn {
   display: flex;

@@ -16,6 +16,7 @@ export default function Gold() {
   const [indicators, setIndicators] = useState<TechnicalIndicatorRecord[]>([])
   const [realtimeGold, setRealtimeGold] = useState<RealtimeAll['gold'] | null>(null)
   const [realtimeSilver, setRealtimeSilver] = useState<{ price: number; date: string } | null>(null)
+  const [chartType, setChartType] = useState<'line' | 'candlestick'>('candlestick')
 
   const loadData = useCallback(async () => {
     try {
@@ -114,7 +115,10 @@ export default function Gold() {
       }
     }
 
-    return {
+    // K 线图数据 [open, close, low, high]
+    const candlestickData = prices.map((p) => [p.open, p.close, p.low, p.high])
+
+    const baseConfig = {
       backgroundColor: '#1e2130',
       tooltip: {
         trigger: 'axis',
@@ -124,7 +128,7 @@ export default function Gold() {
         axisPointer: { type: 'cross' },
       },
       legend: {
-        data: ['收盘价', 'MA5', 'MA20', 'MA60'],
+        data: chartType === 'candlestick' ? ['K线', 'MA5', 'MA20', 'MA60'] : ['收盘价', 'MA5', 'MA20', 'MA60'],
         textStyle: { color: '#8b8e98', fontSize: 12 },
         top: 8,
       },
@@ -145,14 +149,14 @@ export default function Gold() {
         },
       ],
       xAxis: {
-        type: 'category',
+        type: 'category' as const,
         data: dates,
         axisLine: { lineStyle: { color: '#2d3040' } },
         axisLabel: { color: '#8b8e98', fontSize: 11 },
         splitLine: { show: false },
       },
       yAxis: {
-        type: 'value',
+        type: 'value' as const,
         scale: true,
         axisLine: { show: false },
         axisLabel: {
@@ -162,6 +166,33 @@ export default function Gold() {
         },
         splitLine: { lineStyle: { color: '#2d3040', type: 'dashed' } },
       },
+    }
+
+    if (chartType === 'candlestick') {
+      return {
+        ...baseConfig,
+        series: [
+          {
+            name: 'K线',
+            type: 'candlestick',
+            data: candlestickData,
+            itemStyle: {
+              color: '#22c55e',        // 上涨填充色（绿色）
+              color0: '#ef4444',       // 下跌填充色（红色）
+              borderColor: '#22c55e',  // 上涨边框
+              borderColor0: '#ef4444', // 下跌边框
+            },
+          },
+          buildMaSeries('5', 'MA5', '#d4a017'),
+          buildMaSeries('20', 'MA20', '#3b82f6'),
+          buildMaSeries('60', 'MA60', '#a855f7'),
+        ],
+      }
+    }
+
+    // 折线图模式
+    return {
+      ...baseConfig,
       series: [
         {
           name: '收盘价',
@@ -187,7 +218,7 @@ export default function Gold() {
         buildMaSeries('60', 'MA60', '#a855f7'),
       ],
     }
-  }, [prices, maData])
+  }, [prices, maData, chartType])
 
   const tableRecords = useMemo(() => {
     return [...prices].slice(-10).reverse()
@@ -274,7 +305,23 @@ export default function Gold() {
           <section className="gold__card gold__chart-card">
             <div className="gold__card-header">
               <h2 className="gold__card-title">历史价格走势</h2>
-              <span className="gold__card-badge">近 120 天</span>
+              <div className="gold__chart-actions">
+                <span className="gold__card-badge">近 120 天</span>
+                <div className="gold__chart-toggle">
+                  <button
+                    className={`gold__chart-toggle-btn ${chartType === 'candlestick' ? 'active' : ''}`}
+                    onClick={() => setChartType('candlestick')}
+                  >
+                    K线
+                  </button>
+                  <button
+                    className={`gold__chart-toggle-btn ${chartType === 'line' ? 'active' : ''}`}
+                    onClick={() => setChartType('line')}
+                  >
+                    折线
+                  </button>
+                </div>
+              </div>
             </div>
             <ReactECharts
               option={chartOption}

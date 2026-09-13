@@ -50,6 +50,8 @@ export default function Dashboard() {
   const [prediction, setPrediction] = useState<PredictionResult | null>(null)
   const [economicHistory, setEconomicHistory] = useState<EconomicHistory | null>(null)
   const [lastUpdate, setLastUpdate] = useState<string>('')
+  const [countdown, setCountdown] = useState(300) // 5 分钟倒计时
+  const [autoRefresh, setAutoRefresh] = useState(true)
 
   const loadRealtimeData = useCallback(async (forceRefresh = false) => {
     try {
@@ -95,12 +97,31 @@ export default function Dashboard() {
     init()
   }, [loadRealtimeData, loadAnalysisData])
 
+  // 自动刷新倒计时
+  useEffect(() => {
+    if (!autoRefresh || loading || refreshing) return
+    
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          // 触发自动刷新
+          loadRealtimeData()
+          return 300
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [autoRefresh, loading, refreshing, loadRealtimeData])
+
   // 一键刷新所有数据
   const handleRefreshAll = async () => {
     setRefreshing(true)
     setError(null)
     await Promise.all([loadRealtimeData(true), loadAnalysisData()])
     setRefreshing(false)
+    setCountdown(300) // 重置倒计时
   }
 
   const formatNumber = (value: number | null | undefined, decimals = 2) => {
@@ -168,15 +189,33 @@ export default function Dashboard() {
             {lastUpdate && <span className="dashboard__last-update"> · 最后更新 {lastUpdate}</span>}
           </p>
         </div>
-        <button
-          className="dashboard__refresh-btn"
-          onClick={handleRefreshAll}
-          disabled={refreshing}
-          title="刷新所有数据"
-        >
-          <span className={`dashboard__refresh-icon ${refreshing ? 'spinning' : ''}`}>↻</span>
-          {refreshing ? '刷新中...' : '刷新数据'}
-        </button>
+        <div className="dashboard__header-actions">
+          {/* 自动刷新控制 */}
+          <div className="dashboard__auto-refresh">
+            <label className="dashboard__auto-refresh-label">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+              />
+              自动刷新
+            </label>
+            {autoRefresh && (
+              <span className="dashboard__countdown">
+                {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+              </span>
+            )}
+          </div>
+          <button
+            className="dashboard__refresh-btn"
+            onClick={handleRefreshAll}
+            disabled={refreshing}
+            title="刷新所有数据"
+          >
+            <span className={`dashboard__refresh-icon ${refreshing ? 'spinning' : ''}`}>↻</span>
+            {refreshing ? '刷新中...' : '刷新数据'}
+          </button>
+        </div>
       </div>
 
       {error && (

@@ -326,6 +326,69 @@
   border: 1px solid rgba(212, 160, 23, 0.3);
 }
 
+/* ── 基本面概览 ─────────────────────────────────────────── */ */
+
+.gold__fundamentals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.gold__info-block {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(212, 160, 23, 0.12);
+  border-radius: 10px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.gold__info-block:hover {
+  border-color: rgba(212, 160, 23, 0.3);
+}
+
+.gold__info-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gold__info-block-icon {
+  font-size: 20px;
+}
+
+.gold__info-block-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.gold__info-block-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gold__info-block-item {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  padding-left: 12px;
+  position: relative;
+}
+
+.gold__info-block-item::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
 /* ── 响应式 ────────────────────────────────────────────── */
 
 @media (max-width: 1280px) {
@@ -352,5 +415,9 @@
   .gold__table td {
     padding: 10px 12px;
     font-size: 12px;
+  }
+
+  .gold__fundamentals-grid {
+    grid-template-columns: 1fr;
   }
 }

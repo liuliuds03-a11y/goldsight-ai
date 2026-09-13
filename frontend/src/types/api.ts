@@ -170,6 +170,12 @@ export interface AnalysisFactor {
   weight?: number
   evidence: string
   score: number
+  /** DeepSeek 返回的额外字段 */
+  key_levels?: {
+    support: number
+    resistance: number
+  }
+  risk_factors?: string[]
 }
 
 /** 分析数据范围 */

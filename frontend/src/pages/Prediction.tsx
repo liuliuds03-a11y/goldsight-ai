@@ -66,10 +66,17 @@ export default function Prediction() {
 
       const result = await triggerGoldPrediction(force)
       const data = result.data
-      setPrediction(data.record)
+      // 验证返回数据完整性，不完整则清空
+      if (data.record && data.record.score != null) {
+        setPrediction(data.record)
+      } else {
+        setPrediction(null)
+      }
       setIsCached(data.cached)
       setCacheInfo(data.message || (data.cached ? '缓存结果' : 'AI 最新预测'))
     } catch (err) {
+      // 预测失败时清空旧数据，避免残留误导
+      setPrediction(null)
       setError(err instanceof Error ? err.message : '预测失败')
     } finally {
       setRefreshing(false)
@@ -96,14 +103,12 @@ export default function Prediction() {
   }
 
   // 从 factors 中提取 key_levels（DeepSeek 返回格式）
-  const keyLevels = prediction?.factors?.find((f) => (f as any).key_levels)
-  const supportLevel = (keyLevels as any)?.key_levels?.support as number | undefined
-  const resistanceLevel = (keyLevels as any)?.key_levels?.resistance as number | undefined
+  const keyLevelsFactor = prediction?.factors?.find((f) => f.key_levels)
+  const supportLevel = keyLevelsFactor?.key_levels?.support
+  const resistanceLevel = keyLevelsFactor?.key_levels?.resistance
 
   // 从 factors 中提取 risk_factors（DeepSeek 返回格式）
-  const rawRiskFactors: string[] = prediction?.factors?.[0] && (prediction.factors[0] as any).risk_factors
-    ? (prediction.factors[0] as any).risk_factors
-    : []
+  const rawRiskFactors: string[] = prediction?.factors?.[0]?.risk_factors ?? []
   const riskFactors = prediction?.factors?.filter((f) => f.score < 50) || []
 
   /* ── 历史预测趋势图配置 ─────────────────────────────── */

@@ -63,10 +63,12 @@ class SilverPriceCollector(BaseCollector):
                         for i in range(119, -1, -1):
                             date = today - timedelta(days=i)
                             date_str = date.strftime("%Y-%m-%d")
-                            # 基于日期种子生成相对当前价格的波动
+                            # 基于日期种子生成确定性波动
                             r_vol = _seeded_random(f"{date_str}_vol")
-                            # 越接近今天，价格越接近当前价
-                            drift = (119 - i) / 119.0
+                            # 修正漂移方向：越接近今天价格越接近当前价
+                            # i=119(最旧) → drift=1(低价), i=0(今天) → drift=0(当前价)
+                            drift = i / 119.0
+                            # 120 天内白银价格从当前价 -15% 逐步回升到当前价
                             base_price = current_price * (1 - drift * 0.15 + r_vol * 0.02)
                             results.append({
                                 "date": date_str,

@@ -7,6 +7,8 @@ GoldSight AI V3.0 - 新闻资讯聚合接口
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
@@ -59,6 +61,14 @@ RSS_FEEDS = [
         "icon": "📈",
     },
 ]
+
+# 分类关键词映射：用于智能筛选，匹配标题和描述
+CATEGORY_KEYWORDS = {
+    "黄金": ["gold", "黄金", "xau", "precious metal", "贵金属", "bullion", "金价", "金矿"],
+    "白银": ["silver", "白银", "xag", "银价", "银矿"],
+    "财经": ["economy", "economic", "fed", "inflation", "gdp", "employment", "经济", "通胀", "就业", "利率", "央行"],
+    "市场": ["market", "stock", "s&p", "nasdaq", "dow", "vix", "treasury", "oil", "市场", "股票", "债券", "原油"],
+}
 
 
 def _parse_rss_feed(xml_content: str, source_name: str, category: str, icon: str) -> List[Dict[str, Any]]:
@@ -138,7 +148,6 @@ async def _get_cached_news() -> Optional[List[Dict[str, Any]]]:
         r = get_redis()
         data = await r.get(NEWS_CACHE_KEY + "latest")
         if data:
-            import json
             return json.loads(data)
     except Exception as e:
         logger.warning(f"新闻缓存读取失败: {e}")
@@ -161,6 +170,19 @@ async def _set_cached_news(news: List[Dict[str, Any]]) -> None:
         logger.warning(f"新闻缓存写入失败: {e}")
 
 
+def _match_category(article: Dict[str, Any], category: str) -> bool:
+    """智能分类匹配：先匹配源分类，再用关键词匹配标题和描述"""
+    # 先匹配源分类
+    if article.get("category") == category:
+        return True
+    # 用关键词匹配标题和描述
+    keywords = CATEGORY_KEYWORDS.get(category, [])
+    if not keywords:
+        return False
+    text = (article.get("title", "") + " " + article.get("description", "")).lower()
+    return any(kw.lower() in text for kw in keywords)
+
+
 @router.get("/news/feed")
 async def get_news_feed(
     category: Optional[str] = Query(None, description="新闻分类过滤"),
@@ -178,17 +200,19 @@ async def get_news_feed(
         # 应用过滤
         filtered = cached
         if category:
-            filtered = [n for n in filtered if n.get("category") == category]
+            filtered = [n for n in filtered if _match_category(n, category)]
         if source:
             filtered = [n for n in filtered if n.get("source") == source]
         return success(data={
             "articles": filtered[:limit],
             "total": len(filtered),
+            "sources": [f["name"] for f in RSS_FEEDS],
+            "categories": list(set(f["category"] for f in RSS_FEEDS)),
             "_cached": True,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         })
 
     # 从 RSS 源获取
-    import asyncio
     tasks = [_fetch_feed(feed) for feed in RSS_FEEDS]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -212,7 +236,7 @@ async def get_news_feed(
     # 应用过滤
     filtered = all_articles
     if category:
-        filtered = [n for n in filtered if n.get("category") == category]
+        filtered = [n for n in filtered if _match_category(n, category)]
     if source:
         filtered = [n for n in filtered if n.get("source") == source]
 

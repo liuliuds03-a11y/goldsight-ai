@@ -109,7 +109,18 @@ export default function Report() {
             value={selectedDate}
             onChange={handleDateChange}
             title="选择日期查看历史报告"
+            placeholder="YYYY-MM-DD"
           />
+          <button
+            className="report__today-btn"
+            onClick={() => {
+              setSelectedDate('')
+              loadReport()
+            }}
+            title="查看今日报告"
+          >
+            今天
+          </button>
           <button
             className="report__refresh-btn"
             onClick={handleRefresh}

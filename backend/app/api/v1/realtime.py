@@ -55,16 +55,16 @@ async def _set_cached(key: str, data: Dict[str, Any]) -> None:
         logger.warning(f"Redis 缓存写入失败: {e}")
 
 
-async def _fetch_gold_price() -> Dict[str, Any]:
-    """获取黄金价格 - gold-api.com（免费无需 key）"""
-    cached = await _get_cached("gold")
+async def _fetch_metal_price(symbol: str, cache_key: str, name: str) -> Dict[str, Any]:
+    """通用金属价格获取 - gold-api.com（免费无需 key）"""
+    cached = await _get_cached(cache_key)
     if cached:
         cached["_cached"] = True
         return cached
 
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            r = await client.get("https://api.gold-api.com/price/XAU")
+            r = await client.get(f"https://api.gold-api.com/price/{symbol}")
             if r.status_code == 200:
                 data = r.json()
                 price = data.get("price")
@@ -73,22 +73,32 @@ async def _fetch_gold_price() -> Dict[str, Any]:
                     price_per_gram = round(price / 31.1035, 2)
                     updated = data.get("updatedAt", "")[:10]
                     result = {
-                        "symbol": "XAU/USD",
+                        "symbol": f"{symbol}/USD",
+                        "name": name,
                         "price": round(price, 2),
                         "price_per_gram_pln": None,
                         "price_per_gram_usd": price_per_gram,
-                        "pln_usd_rate": None,
                         "date": updated,
                         "source": "gold-api",
                         "updated_at": datetime.now(timezone.utc).isoformat(),
                         "_cached": False,
                     }
-                    await _set_cached("gold", result)
+                    await _set_cached(cache_key, result)
                     return result
     except Exception as e:
-        logger.error(f"黄金价格获取失败: {e}")
+        logger.error(f"{name}价格获取失败: {e}")
     
-    return {"symbol": "XAU/USD", "price": None, "error": "数据获取失败", "source": "gold-api"}
+    return {"symbol": f"{symbol}/USD", "name": name, "price": None, "error": "数据获取失败", "source": "gold-api"}
+
+
+async def _fetch_gold_price() -> Dict[str, Any]:
+    """获取黄金价格 - gold-api.com"""
+    return await _fetch_metal_price("XAU", "gold", "Gold")
+
+
+async def _fetch_silver() -> Dict[str, Any]:
+    """获取白银价格 - gold-api.com"""
+    return await _fetch_metal_price("XAG", "silver", "Silver")
 
 
 async def _fetch_usd_index() -> Dict[str, Any]:
@@ -126,33 +136,10 @@ async def _fetch_treasury_yield() -> Dict[str, Any]:
         cached["_cached"] = True
         return cached
 
-    try:
-        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
-            r = await client.get(url)
-            if r.status_code == 200:
-                lines = r.text.strip().split("\n")
-                # CSV: DATE,VALUE - 取最后有效行
-                for line in reversed(lines[1:]):
-                    parts = line.split(",")
-                    if len(parts) >= 2 and parts[1] != ".":
-                        yield_val = float(parts[1])
-                        result = {
-                            "symbol": "DGS10",
-                            "name": "10-Year Treasury Yield",
-                            "value": yield_val,
-                            "unit": "%",
-                            "date": parts[0],
-                            "source": "fred",
-                            "updated_at": datetime.now(timezone.utc).isoformat(),
-                            "_cached": False,
-                        }
-                        await _set_cached("treasury", result)
-                        return result
-    except Exception as e:
-        logger.error(f"美债收益率获取失败: {e}")
-    
-    return {"symbol": "DGS10", "value": None, "error": "数据获取失败", "source": "fred"}
+    result = await _fetch_fred_series("DGS10", "10-Year Treasury Yield", "treasury")
+    if result.get("value") is not None:
+        result["unit"] = "%"
+    return result
 
 
 async def _fetch_oil_price() -> Dict[str, Any]:
@@ -162,32 +149,11 @@ async def _fetch_oil_price() -> Dict[str, Any]:
         cached["_cached"] = True
         return cached
 
-    try:
-        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO"
-            r = await client.get(url)
-            if r.status_code == 200:
-                lines = r.text.strip().split("\n")
-                for line in reversed(lines[1:]):
-                    parts = line.split(",")
-                    if len(parts) >= 2 and parts[1] != ".":
-                        price = float(parts[1])
-                        result = {
-                            "symbol": "WTI",
-                            "name": "Crude Oil WTI",
-                            "price": price,
-                            "unit": "USD/barrel",
-                            "date": parts[0],
-                            "source": "fred",
-                            "updated_at": datetime.now(timezone.utc).isoformat(),
-                            "_cached": False,
-                        }
-                        await _set_cached("oil", result)
-                        return result
-    except Exception as e:
-        logger.error(f"原油价格获取失败: {e}")
-    
-    return {"symbol": "WTI", "price": None, "error": "数据获取失败", "source": "fred"}
+    result = await _fetch_fred_series("DCOILWTICO", "Crude Oil WTI", "oil")
+    if result.get("value") is not None:
+        result["price"] = result["value"]
+        result["unit"] = "USD/barrel"
+    return result
 
 
 async def _fetch_stock_index() -> Dict[str, Any]:
@@ -197,31 +163,7 @@ async def _fetch_stock_index() -> Dict[str, Any]:
         cached["_cached"] = True
         return cached
 
-    try:
-        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500"
-            r = await client.get(url)
-            if r.status_code == 200:
-                lines = r.text.strip().split("\n")
-                for line in reversed(lines[1:]):
-                    parts = line.split(",")
-                    if len(parts) >= 2 and parts[1] != ".":
-                        value = float(parts[1])
-                        result = {
-                            "symbol": "SPX",
-                            "name": "S&P 500",
-                            "value": value,
-                            "date": parts[0],
-                            "source": "fred",
-                            "updated_at": datetime.now(timezone.utc).isoformat(),
-                            "_cached": False,
-                        }
-                        await _set_cached("stock", result)
-                        return result
-    except Exception as e:
-        logger.error(f"股指数据获取失败: {e}")
-    
-    return {"symbol": "SPX", "value": None, "error": "数据获取失败", "source": "fred"}
+    return await _fetch_fred_series("SP500", "S&P 500", "stock")
 
 
 async def _fetch_fred_series(series_id: str, name: str, cache_key: str) -> Dict[str, Any]:
@@ -373,42 +315,6 @@ async def _fetch_consumer_sentiment() -> Dict[str, Any]:
     return await _fetch_fred_series("UMCSENT", "Consumer Sentiment Index", "consumer_sentiment")
 
 
-async def _fetch_silver() -> Dict[str, Any]:
-    """白银价格 - gold-api.com（免费无需 key）"""
-    cached = await _get_cached("silver")
-    if cached:
-        cached["_cached"] = True
-        return cached
-
-    try:
-        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            r = await client.get("https://api.gold-api.com/price/XAG")
-            if r.status_code == 200:
-                data = r.json()
-                price = data.get("price")
-                if price:
-                    price = float(price)
-                    price_per_gram = round(price / 31.1035, 2)
-                    updated = data.get("updatedAt", "")[:10]
-                    result = {
-                        "symbol": "XAG/USD",
-                        "name": "Silver",
-                        "price": round(price, 2),
-                        "price_per_gram_pln": None,
-                        "price_per_gram_usd": price_per_gram,
-                        "date": updated,
-                        "source": "gold-api",
-                        "updated_at": datetime.now(timezone.utc).isoformat(),
-                        "_cached": False,
-                    }
-                    await _set_cached("silver", result)
-                    return result
-    except Exception as e:
-        logger.error(f"白银价格获取失败: {e}")
-    
-    return {"symbol": "XAG/USD", "name": "Silver", "price": None, "error": "数据获取失败", "source": "gold-api"}
-
-
 # ── API 端点 ──────────────────────────────────────────────────
 
 
@@ -478,8 +384,8 @@ async def get_realtime_copper():
 @router.get("/realtime/treasury-curves")
 async def get_realtime_treasury_curves():
     """美债收益率曲线 (2Y/10Y/30Y)"""
-    import asyncio
-    t2y, t10y, t30y = await asyncio.gather(
+    import asyncio as _asyncio
+    t2y, t10y, t30y = await _asyncio.gather(
         _fetch_treasury_2y(),
         _fetch_treasury_yield(),
         _fetch_treasury_30y(),
@@ -495,8 +401,8 @@ async def get_realtime_treasury_curves():
 @router.get("/realtime/economic")
 async def get_realtime_economic():
     """经济指标汇总 (就业/GDP/PMI/失业率/通胀)"""
-    import asyncio
-    nonfarm, unemployment, gdp, ppi, retail = await asyncio.gather(
+    import asyncio as _asyncio
+    nonfarm, unemployment, gdp, ppi, retail = await _asyncio.gather(
         _fetch_nonfarm_payrolls(),
         _fetch_unemployment_rate(),
         _fetch_gdp_growth(),
@@ -516,7 +422,7 @@ async def get_realtime_economic():
 @router.get("/realtime/economic-history")
 async def get_economic_history():
     """经济指标历史趋势数据（最近 36 个月，用于图表展示）"""
-    import asyncio
+    import asyncio as _asyncio
 
     indicators = {
         "nonfarm": ("PAYEMS", "非农就业", "千人"),
@@ -531,7 +437,7 @@ async def get_economic_history():
         return key, {"name": name, "unit": unit, "data": data}
 
     tasks = [_fetch_one(k, sid, nm, u) for k, (sid, nm, u) in indicators.items()]
-    results = await asyncio.gather(*tasks)
+    results = await _asyncio.gather(*tasks)
 
     history = {k: v for k, v in results}
     return success(data=history)
@@ -540,8 +446,8 @@ async def get_economic_history():
 @router.get("/realtime/financial-stress")
 async def get_financial_stress():
     """金融压力指标 (VIX/实际收益率/信用利差/美元指数)"""
-    import asyncio
-    vix, real_yield, credit, dollar = await asyncio.gather(
+    import asyncio as _asyncio
+    vix, real_yield, credit, dollar = await _asyncio.gather(
         _fetch_vix(),
         _fetch_real_yield(),
         _fetch_credit_spread(),
@@ -559,8 +465,8 @@ async def get_financial_stress():
 @router.get("/realtime/sentiment")
 async def get_sentiment():
     """市场情绪指标 (消费者信心/初请失业金)"""
-    import asyncio
-    sentiment, claims = await asyncio.gather(
+    import asyncio as _asyncio
+    sentiment, claims = await _asyncio.gather(
         _fetch_consumer_sentiment(),
         _fetch_jobless_claims(),
     )
@@ -574,8 +480,8 @@ async def get_sentiment():
 @router.get("/realtime/all")
 async def get_realtime_all():
     """一次获取所有实时数据"""
-    import asyncio
-    gold, usd, treasury, oil, stock, silver, fed, vix = await asyncio.gather(
+    import asyncio as _asyncio
+    gold, usd, treasury, oil, stock, silver, fed, vix = await _asyncio.gather(
         _fetch_gold_price(),
         _fetch_usd_index(),
         _fetch_treasury_yield(),

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import text
@@ -86,6 +86,7 @@ class BaseCollector(ABC):
         将记录写入目标数据库表。
         自动补充 source、collected_at、quality_status 字段。
         使用 ON CONFLICT DO NOTHING 避免重复插入。
+        分批提交，每批 50 条，失败时回滚当前批次。
 
         Returns:
             成功插入的记录数量
@@ -93,7 +94,7 @@ class BaseCollector(ABC):
         if not records:
             return 0
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         columns = list(records[0].keys())
 
         # 自动补充框架字段
@@ -111,24 +112,33 @@ class BaseCollector(ABC):
         )
 
         inserted = 0
-        for record in records:
-            values = dict(record)
-            values.setdefault("source", self.source_name)
-            values.setdefault("collected_at", now)
-            values.setdefault("quality_status", "valid")
+        batch_size = 50
 
+        for batch_start in range(0, len(records), batch_size):
+            batch = records[batch_start:batch_start + batch_size]
             try:
-                result = await session.execute(sql, values)
-                if result.rowcount > 0:
-                    inserted += 1
+                for record in batch:
+                    values = dict(record)
+                    values.setdefault("source", self.source_name)
+                    values.setdefault("collected_at", now)
+                    values.setdefault("quality_status", "valid")
+
+                    result = await session.execute(sql, values)
+                    if result.rowcount > 0:
+                        inserted += 1
+                # 每批提交一次
+                await session.commit()
             except Exception as e:
+                # 回滚当前批次
+                await session.rollback()
                 logger.warning(
-                    f"[{self.source_name}] 插入记录失败: {e}"
+                    f"[{self.source_name}] 批次插入失败 "
+                    f"({batch_start}-{batch_start + len(batch)}): {e}"
                 )
                 await self._log_quality_issue(
                     session, "accuracy", "warning",
                     f"数据插入失败: {e}",
-                    {"record": str(values)[:500]},
+                    {"batch": f"{batch_start}-{batch_start + len(batch)}"},
                 )
 
         return inserted
@@ -151,14 +161,14 @@ class BaseCollector(ABC):
                 ":det, :src, :cat, 'pending')"
             )
             await session.execute(sql, {
-                "ts": datetime.utcnow(),
+                "ts": datetime.now(timezone.utc),
                 "tbl": self.target_table,
                 "ct": check_type,
                 "sev": severity,
                 "msg": message,
                 "det": str(details or {}),
                 "src": self.source_name,
-                "cat": datetime.utcnow(),
+                "cat": datetime.now(timezone.utc),
             })
         except Exception as e:
             logger.error(f"[{self.source_name}] 写入质量日志失败: {e}")

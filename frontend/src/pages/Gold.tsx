@@ -8,6 +8,50 @@ import type {
 } from '@/types'
 import './Gold.css'
 
+/** 黄金基本面静态数据 */
+const GOLD_FUNDAMENTALS = [
+  {
+    icon: '🏦',
+    title: '央行与储备',
+    items: [
+      '全球央行黄金储备总量超 3.6 万吨',
+      '中国、印度、土耳其央行近年持续增持',
+      '2024 年全球央行净购入超 1,000 吨',
+      '央行买盘为金价提供长期支撑',
+    ],
+  },
+  {
+    icon: '💰',
+    title: '投资需求',
+    items: [
+      '黄金 ETF 持仓量是重要情绪指标',
+      'COMEX 期货持仓反映投机情绪',
+      '实物金条金币需求在亚洲旺盛',
+      '避险情绪升温时资金涌入黄金',
+    ],
+  },
+  {
+    icon: '📊',
+    title: '供需格局',
+    items: [
+      '全球黄金年供给约 4,800 吨',
+      '矿产金占 75%，回收金占 25%',
+      ' jewellery 需求占 25%，投资占 25%',
+      '供需基本平衡，价格由边际资金流驱动',
+    ],
+  },
+  {
+    icon: '🌍',
+    title: '宏观驱动',
+    items: [
+      '实际利率是黄金最核心定价因子',
+      '美元走弱利好金价，反之亦然',
+      '地缘政治风险推升避险需求',
+      '通胀预期上升时黄金表现优异',
+    ],
+  },
+]
+
 export default function Gold() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -372,6 +416,29 @@ export default function Gold() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </section>
+
+          {/* 黄金基本面概览 */}
+          <section className="gold__card">
+            <div className="gold__card-header">
+              <h2 className="gold__card-title">黄金基本面概览</h2>
+              <span className="gold__card-badge">央行 · 投资 · 宏观</span>
+            </div>
+            <div className="gold__fundamentals-grid">
+              {GOLD_FUNDAMENTALS.map((block) => (
+                <div key={block.title} className="gold__info-block">
+                  <div className="gold__info-block-header">
+                    <span className="gold__info-block-icon">{block.icon}</span>
+                    <h3 className="gold__info-block-title">{block.title}</h3>
+                  </div>
+                  <ul className="gold__info-block-list">
+                    {block.items.map((item, idx) => (
+                      <li key={idx} className="gold__info-block-item">{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </section>
         </>

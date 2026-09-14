@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = `http://localhost:${backendPort}`
 
   return {
+    base: '/goldsight-ai/',
     plugins: [react()],
     resolve: {
       alias: {
